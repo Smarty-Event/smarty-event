@@ -1,160 +1,150 @@
-# Turborepo starter
+# SmartyEvents
 
-This Turborepo starter is maintained by the Turborepo core team.
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![Frontend: Next.js](https://img.shields.io/badge/Frontend-Next.js-black?logo=next.js)](https://nextjs.org/)
+[![Backend: NestJS](https://img.shields.io/badge/Backend-NestJS-red?logo=nestjs)](https://nestjs.com/)
+[![Database: Prisma](https://img.shields.io/badge/Database-Prisma-teal?logo=prisma)](https://www.prisma.io/)
+[![Stellar](https://img.shields.io/badge/Stellar-SDK-purple?logo=stellar)](https://stellar.org)
 
-## Using this example
+SmartyEvents is a multi-tenant event ticketing platform powered by the Stellar blockchain. It enables organizations to host events, manage tickets, coordinate multi-session agendas with speakers, and issue blockchain-backed tickets as custom Stellar assets. Attendees enjoy true digital ownership of their tickets, and event managers gain secure verification tools using HMAC-SHA256 tokens and on-chain ownership checks.
 
-Run the following command:
+## ✨ Key Features
 
-```sh
-npx create-turbo@latest
+### For Event Organizers (Tenants)
+
+- **Multi-Tenant Architecture**: Manage separate branding, custom domains, and stellar configuration accounts per organization under isolated data profiles.
+- **Agendas & Speaker Management**: Schedule tracks and sessions, list speakers, and structure event itineraries dynamically.
+- **Tiered Ticketing**: Design custom ticket classes (e.g. VIP, General Admission, Early Bird) with custom price tiers and capacity bounds.
+- **Promotional Discounts**: Define event-wide discount codes with custom percentage limits and usage caps.
+
+### For Attendees
+
+- **Stellar-Backed Tickets**: True ticket ownership represented as custom Stellar assets on the Stellar Testnet.
+- **Secure Ticket Check-In**: Check-in safely at event gates via HMAC-SHA256 signature tokens designed for fast, offline, and fraud-resistant verification.
+- **Multi-Method Checkout**: Purchase tickets using Stellar USDC, traditional card networks, or bank transfers.
+
+### Technical Highlights
+
+- **Turborepo Monorepo**: Extremely fast build pipelines, type sharing, and task caching.
+- **Type-Safe Database Access**: Relational PostgreSQL database managed via Prisma ORM.
+- **Stellar Integration Package**: Wrapper package around the `stellar-sdk` handling keys, asset creation, ticket minting, and trustline/ownership checks.
+
+## 🏗 Project Structure
+
+The repository is organized as a monorepo containing application suites and shared packages:
+
+### Applications
+
+- **`apps/api/`**: NestJS application providing the central REST endpoints, tenant separation, event itineraries, ticketing endpoints, and Stellar configurations.
+- **`apps/web/`**: Next.js application representing the consumer and portal frontend.
+
+### Shared Packages
+
+- **`packages/database/`**: Shared client setup containing the Prisma schema definitions and migration configurations for PostgreSQL.
+- **`packages/stellar/`**: Helper library wrapping the `stellar-sdk` for wallet keypair generation, ticket asset issuing, minting, and verification.
+- **`packages/ui/`**: Shared React UI components (button, card, etc.) utilized across the frontend workspace.
+- **`packages/eslint-config/`** & **`packages/typescript-config/`**: Shared linting and compiler configuration presets.
+
+---
+
+## 🛠 Tech Stack
+
+- **Blockchain**: [Stellar](https://stellar.org) (using `stellar-sdk` v13)
+- **Frontend**: [Next.js 16](https://nextjs.org/) (React 19, TypeScript)
+- **Backend**: [NestJS 10](https://nestjs.com/) (TypeScript, RxJS)
+- **Database**: [PostgreSQL](https://www.postgresql.org/) with [Prisma ORM](https://www.prisma.io/)
+- **Monorepo Engine**: [Turborepo](https://turbo.build/) with `npm` Workspaces
+
+---
+
+## 🏁 Getting Started
+
+### Prerequisites
+
+- [Node.js](https://nodejs.org/) (v18 or higher)
+- [npm](https://www.npmjs.com/) (v10 or higher)
+- [PostgreSQL](https://www.postgresql.org/) (database running locally or in the cloud)
+
+### Manual Setup
+
+1. **Clone the repository:**
+
+   ```bash
+   git clone https://github.com/Smarty-Event/smarty-event.git
+   cd smarty-events
+   ```
+
+2. **Install workspace dependencies:**
+
+   ```bash
+   npm install
+   ```
+
+3. **Configure Environment Variables:**
+   Create a `.env` file in the root of the project (or inside `packages/database` and `apps/api` depending on deployment environment) with the following variables:
+
+   ```env
+   # Database connection URL (PostgreSQL)
+   DATABASE_URL="postgresql://<username>:<password>@localhost:5432/smarty_events?schema=public"
+
+   # Add additional API or Stellar environment variables as needed
+   PORT=3001
+   ```
+
+4. **Generate and apply Database Schemas:**
+   From the root directory, generate the Prisma client:
+
+   ```bash
+   npx turbo run db:generate
+   ```
+
+   Push the schema to your PostgreSQL instance:
+
+   ```bash
+   npx turbo run db:push
+   ```
+
+5. **Start Dev Servers (All Applications):**
+   ```bash
+   npm run dev
+   ```
+   This command starts the NestJS API server (`http://localhost:3001`) and the Next.js Web server (`http://localhost:3000`) concurrently.
+
+---
+
+## 💻 Available Scripts
+
+You can run these scripts using `npm run <command>` or `npx turbo run <command>`:
+
+- `npm run dev` - Start all apps and watch-mode tools concurrently
+- `npm run build` - Compile all apps and library packages for production
+- `npm run lint` - Run ESLint across all projects
+- `npm run format` - Format code across all directories with Prettier
+- `npm run check-types` - Validate Typescript compilation safety across the monorepo
+
+To target a specific package or application, utilize Turborepo's filter feature:
+
+```bash
+npx turbo dev --filter=web    # Runs only Next.js frontend
+npx turbo dev --filter=api    # Runs only NestJS backend
 ```
 
-## What's inside?
+---
 
-This Turborepo includes the following packages/apps:
+## 🔒 Security
 
-### Apps and Packages
+For details on security protocols, secure offline QR tickets (using HMAC tokens), and vulnerability reporting, please review our security practices or raise an issue.
 
-- `docs`: a [Next.js](https://nextjs.org/) app
-- `web`: another [Next.js](https://nextjs.org/) app
-- `@repo/ui`: a stub React component library shared by both `web` and `docs` applications
-- `@repo/eslint-config`: `eslint` configurations (includes `eslint-config-next` and `eslint-config-prettier`)
-- `@repo/typescript-config`: `tsconfig.json`s used throughout the monorepo
+## 🤝 Contributing
 
-Each package/app is 100% [TypeScript](https://www.typescriptlang.org/).
+We welcome contributions!
 
-### Utilities
+1. Fork this repository.
+2. Create your feature branch (`git checkout -b feature/cool-feature`).
+3. Commit your changes (`git commit -m 'Add some cool feature'`).
+4. Push to the branch (`git push origin feature/cool-feature`).
+5. Open a Pull Request.
 
-This Turborepo has some additional tools already setup for you:
+## 📄 License
 
-- [TypeScript](https://www.typescriptlang.org/) for static type checking
-- [ESLint](https://eslint.org/) for code linting
-- [Prettier](https://prettier.io) for code formatting
-
-### Build
-
-To build all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo build
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo build
-npm dlx turbo build
-npm exec turbo build
-```
-
-You can build a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo build --filter=docs
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo build --filter=docs
-npm exec turbo build --filter=docs
-npm exec turbo build --filter=docs
-```
-
-### Develop
-
-To develop all apps and packages, run the following command:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo dev
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo dev
-npm exec turbo dev
-npm exec turbo dev
-```
-
-You can develop a specific package by using a [filter](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters):
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo dev --filter=web
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo dev --filter=web
-npm exec turbo dev --filter=web
-npm exec turbo dev --filter=web
-```
-
-### Remote Caching
-
-> [!TIP]
-> Vercel Remote Cache is free for all plans. Get started today at [vercel.com](https://vercel.com/signup?utm_source=remote-cache-sdk&utm_campaign=free_remote_cache).
-
-Turborepo can use a technique known as [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching) to share cache artifacts across machines, enabling you to share build caches with your team and CI/CD pipelines.
-
-By default, Turborepo will cache locally. To enable Remote Caching you will need an account with Vercel. If you don't have an account you can [create one](https://vercel.com/signup?utm_source=turborepo-examples), then enter the following commands:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed (recommended):
-
-```sh
-cd my-turborepo
-turbo login
-```
-
-Without global `turbo`, use your package manager:
-
-```sh
-cd my-turborepo
-npx turbo login
-npm exec turbo login
-npm exec turbo login
-```
-
-This will authenticate the Turborepo CLI with your [Vercel account](https://vercel.com/docs/concepts/personal-accounts/overview).
-
-Next, you can link your Turborepo to your Remote Cache by running the following command from the root of your Turborepo:
-
-With [global `turbo`](https://turborepo.dev/docs/getting-started/installation#global-installation) installed:
-
-```sh
-turbo link
-```
-
-Without global `turbo`:
-
-```sh
-npx turbo link
-npm exec turbo link
-npm exec turbo link
-```
-
-## Useful Links
-
-Learn more about the power of Turborepo:
-
-- [Tasks](https://turborepo.dev/docs/crafting-your-repository/running-tasks)
-- [Caching](https://turborepo.dev/docs/crafting-your-repository/caching)
-- [Remote Caching](https://turborepo.dev/docs/core-concepts/remote-caching)
-- [Filtering](https://turborepo.dev/docs/crafting-your-repository/running-tasks#using-filters)
-- [Configuration Options](https://turborepo.dev/docs/reference/configuration)
-- [CLI Usage](https://turborepo.dev/docs/reference/command-line-reference)
-# smarty-event
+This project is licensed under the MIT License. See the `LICENSE` file for details.
