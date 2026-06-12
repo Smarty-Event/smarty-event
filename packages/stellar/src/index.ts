@@ -7,8 +7,8 @@ import {
   Operation,
 } from "stellar-sdk";
 
-const HORIZON_URL = "https://horizon-testnet.stellar.org";
-const server = new Horizon.Server(HORIZON_URL);
+export const HORIZON_URL = "https://horizon-testnet.stellar.org";
+export const server = new Horizon.Server(HORIZON_URL);
 
 export interface StellarWallet {
   publicKey: string;
@@ -33,7 +33,7 @@ async function fundAccount(publicKey: string): Promise<void> {
 }
 
 // Ensure account is funded on Testnet
-async function ensureAccountActive(publicKey: string): Promise<void> {
+export async function ensureAccountActive(publicKey: string): Promise<void> {
   try {
     await server.loadAccount(publicKey);
   } catch (err: any) {
@@ -184,4 +184,41 @@ export async function verifyTicketOwnership(params: {
     // If account doesn't exist or load failed, return false
     return false;
   }
+}
+
+export async function transferTicket(params: {
+  distributorSecret: string;
+  destinationPublicKey: string;
+  assetCode: string;
+  issuerPublicKey: string;
+  amount: string;
+}) {
+  const distKey = Keypair.fromSecret(params.distributorSecret);
+  const asset = new Asset(params.assetCode, params.issuerPublicKey);
+
+  // Ensure distributor account is active
+  await ensureAccountActive(distKey.publicKey());
+
+  // Distributor transfers 1 ticket asset to the attendee
+  const distAccount = await server.loadAccount(distKey.publicKey());
+  const paymentTx = new TransactionBuilder(distAccount, {
+    fee: "100",
+    networkPassphrase: Networks.TESTNET,
+  })
+    .addOperation(
+      Operation.payment({
+        destination: params.destinationPublicKey,
+        asset: asset,
+        amount: params.amount,
+      })
+    )
+    .setTimeout(180)
+    .build();
+
+  paymentTx.sign(distKey);
+  const result = await server.submitTransaction(paymentTx);
+
+  return {
+    txHash: result.hash,
+  };
 }
