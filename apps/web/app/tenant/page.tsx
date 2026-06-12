@@ -39,6 +39,8 @@ interface Event {
   startDate: string;
   endDate: string;
   capacity: number;
+  banner?: string;
+  category?: string;
   ticketTypes: TicketType[];
   speakers: Speaker[];
   sessions: Session[];
@@ -68,6 +70,8 @@ export default function OrganizerPortal() {
   const [eventStart, setEventStart] = useState("2026-09-12T09:00");
   const [eventEnd, setEventEnd] = useState("2026-09-13T17:00");
   const [eventCap, setEventCap] = useState(200);
+  const [eventBanner, setEventBanner] = useState("");
+  const [eventCategory, setEventCategory] = useState("Technology");
 
   // Create Ticket Type State
   const [selectedEventId, setSelectedEventId] = useState("");
@@ -247,6 +251,8 @@ export default function OrganizerPortal() {
       startDate: new Date(eventStart).toISOString(),
       endDate: new Date(eventEnd).toISOString(),
       capacity: Number(eventCap),
+      banner: eventBanner || undefined,
+      category: eventCategory,
     };
 
     try {
@@ -261,6 +267,8 @@ export default function OrganizerPortal() {
       loadTenantData(activeTenant.id);
       setEventTitle("");
       setEventDesc("");
+      setEventBanner("");
+      setEventCategory("Technology");
       setShowEventModal(false);
       setMessage("Event published successfully!");
     } catch (err) {
@@ -272,6 +280,8 @@ export default function OrganizerPortal() {
         startDate: eventStart,
         endDate: eventEnd,
         capacity: Number(eventCap),
+        banner: eventBanner || undefined,
+        category: eventCategory,
         ticketTypes: [],
         speakers: [],
         sessions: [],
@@ -283,10 +293,48 @@ export default function OrganizerPortal() {
       loadTenantData(activeTenant.id);
       setEventTitle("");
       setEventDesc("");
+      setEventBanner("");
+      setEventCategory("Technology");
       setShowEventModal(false);
       setMessage("Simulation Event created locally!");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const [uploadingFile, setUploadingFile] = useState(false);
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploadingFile(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("http://localhost:3001/api/events/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to upload image");
+      }
+
+      setEventBanner(data.url);
+      setMessage("Image uploaded successfully!");
+    } catch (err: any) {
+      console.warn("Upload failed, simulating local asset path:", err);
+      setEventBanner("https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80");
+      setMessage("Simulation upload completed locally!");
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -760,7 +808,7 @@ export default function OrganizerPortal() {
       {/* Modal 2: Create Event */}
       {showEventModal && (
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
-          <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "500px" }}>
+          <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "550px" }}>
             <h3 style={{ fontSize: "1.5rem", fontWeight: "800", marginBottom: "0.5rem" }}>Publish New Event</h3>
             <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>List a new event under your active tenant space.</p>
             <form onSubmit={handleCreateEvent}>
@@ -770,18 +818,61 @@ export default function OrganizerPortal() {
               </div>
               <div className="form-group">
                 <label className="label">Description</label>
-                <textarea className="textarea" placeholder="Detailed event summary..." value={eventDesc} onChange={(e) => setEventDesc(e.target.value)} style={{ minHeight: "80px" }} />
+                <textarea className="textarea" placeholder="Detailed event summary..." value={eventDesc} onChange={(e) => setEventDesc(e.target.value)} style={{ minHeight: "65px" }} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
+              
+              {/* Start & End Dates Row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
                 <div className="form-group">
                   <label className="label">Starts</label>
-                  <input type="datetime-local" className="input" value={eventStart} onChange={(e) => setEventStart(e.target.value)} />
+                  <input type="datetime-local" className="input" value={eventStart} onChange={(e) => setEventStart(e.target.value)} required />
                 </div>
                 <div className="form-group">
-                  <label className="label">Capacity</label>
-                  <input type="number" className="input" value={eventCap} onChange={(e) => setEventCap(Number(e.target.value))} />
+                  <label className="label">Ends</label>
+                  <input type="datetime-local" className="input" value={eventEnd} onChange={(e) => setEventEnd(e.target.value)} required />
                 </div>
               </div>
+
+              {/* Capacity & Category Row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+                <div className="form-group">
+                  <label className="label">Capacity</label>
+                  <input type="number" className="input" value={eventCap} onChange={(e) => setEventCap(Number(e.target.value))} required />
+                </div>
+                <div className="form-group">
+                  <label className="label">Category</label>
+                  <select className="select" value={eventCategory} onChange={(e) => setEventCategory(e.target.value)}>
+                    <option value="Technology">Technology</option>
+                    <option value="Music">Music</option>
+                    <option value="Conference">Conference</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Banner Upload Row */}
+              <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+                <label className="label">Banner Image</label>
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="URL (e.g. https://...) or upload..." 
+                    value={eventBanner} 
+                    onChange={(e) => setEventBanner(e.target.value)} 
+                    style={{ flex: 1 }}
+                  />
+                  <label className="btn btn-secondary" style={{ padding: "0.55rem 1rem", fontSize: "0.85rem", cursor: "pointer", display: "inline-block", margin: 0 }}>
+                    {uploadingFile ? "Uploading..." : "Upload File"}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleImageUpload} 
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
+              </div>
+
               <div style={{ display: "flex", gap: "1rem" }}>
                 <button type="button" onClick={() => setShowEventModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>

@@ -1,9 +1,44 @@
-import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException } from "@nestjs/common";
 import { EventService } from "./event.service";
+import { FileInterceptor } from "@nestjs/platform-express";
+// @ts-ignore
+import { diskStorage } from "multer";
+import { extname } from "path";
+import * as fs from "fs";
+
+// Ensure uploads directory exists
+const uploadDir = "./uploads";
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
 
 @Controller("events")
 export class EventController {
   constructor(private readonly eventService: EventService) {}
+
+  @Post("upload")
+  @UseInterceptors(
+    FileInterceptor("file", {
+      storage: diskStorage({
+        destination: "./uploads",
+        filename: (req: any, file: any, callback: any) => {
+          const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
+          const ext = extname(file.originalname);
+          callback(null, `banner-${uniqueSuffix}${ext}`);
+        },
+      }),
+      limits: {
+        fileSize: 5 * 1024 * 1024, // 5MB limit
+      },
+    })
+  )
+  async uploadImage(@UploadedFile() file: any) {
+    if (!file) {
+      throw new BadRequestException("No file uploaded");
+    }
+    const imageUrl = `http://localhost:3001/uploads/${file.filename}`;
+    return { url: imageUrl };
+  }
 
   @Post()
   async create(
