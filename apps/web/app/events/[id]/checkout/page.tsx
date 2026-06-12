@@ -56,10 +56,23 @@ function CheckoutContent() {
         if (!isInstalled || !isInstalled.isConnected) {
           throw new Error("Freighter browser extension is not installed or detected. Please install Freighter or use Albedo.");
         }
-        const { publicKey } = await freighter.getPublicKey();
+        let publicKey = "";
+        if (typeof freighter.getPublicKey === "function") {
+          const res = await freighter.getPublicKey();
+          publicKey = typeof res === "object" && res ? res.publicKey || res.address : res;
+        } else if (typeof freighter.getAddress === "function") {
+          const res = await freighter.getAddress();
+          publicKey = typeof res === "object" && res ? res.address || res.publicKey : res;
+        } else if (typeof freighter.requestAccess === "function") {
+          const res = await freighter.requestAccess();
+          publicKey = typeof res === "object" && res ? res.address || res.publicKey : res;
+        }
+
         if (publicKey) {
           setConnectedPublicKey(publicKey);
           setWalletType("non-custodial");
+        } else {
+          throw new Error("Unable to retrieve public key from Freighter wallet.");
         }
       }
     } catch (err: any) {
