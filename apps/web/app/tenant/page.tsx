@@ -49,6 +49,7 @@ export default function OrganizerPortal() {
   const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
   const [metrics, setMetrics] = useState<any>(null);
   const [events, setEvents] = useState<Event[]>([]);
+  const [userProfile, setUserProfile] = useState<any>(null);
 
   // Modals Visibility
   const [showTenantModal, setShowTenantModal] = useState(false);
@@ -91,6 +92,14 @@ export default function OrganizerPortal() {
 
   useEffect(() => {
     loadTenants();
+    const storedUser = localStorage.getItem("smarty_user");
+    if (storedUser) {
+      try {
+        setUserProfile(JSON.parse(storedUser));
+      } catch {
+        setUserProfile(null);
+      }
+    }
   }, []);
 
   useEffect(() => {
@@ -514,34 +523,59 @@ export default function OrganizerPortal() {
         ) : metrics ? (
           <div style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }}>
             
-            {/* Top row widgets (Wallets and Metrics) */}
-            <div style={{ display: "grid", gridTemplateColumns: "1.5fr 2fr", gap: "2rem", flexWrap: "wrap" }}>
+            {/* Top row widgets (Profile, Wallets, and Metrics) */}
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "1.5rem", marginBottom: "2.5rem" }}>
+              {/* Profile Card */}
+              <div className="glass" style={{ padding: "1.5rem", borderRadius: "20px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <span className="badge badge-primary" style={{ marginBottom: "1rem", alignSelf: "flex-start" }}>Organization Profile</span>
+                  <h3 style={{ fontSize: "1.2rem", fontWeight: "700", marginBottom: "0.5rem", color: "#ffffff" }}>
+                    {activeTenant?.name || "Mock Tenant Space"}
+                  </h3>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
+                    <strong>Slug:</strong> <span style={{ color: "#ffffff" }}>{activeTenant?.slug || "mock"}</span>
+                  </p>
+                  {userProfile && (
+                    <>
+                      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.5rem" }}>
+                        <strong>Admin User:</strong> <span style={{ color: "#ffffff", wordBreak: "break-all" }}>{userProfile.email}</span>
+                      </p>
+                      <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>
+                        <strong>Role:</strong> <span className="badge badge-info" style={{ fontSize: "0.75rem", padding: "0.2rem 0.5rem", background: "rgba(99, 102, 241, 0.15)", color: "var(--primary)" }}>{userProfile.role || "OWNER"}</span>
+                      </p>
+                    </>
+                  )}
+                </div>
+              </div>
+
               {/* Wallet info */}
-              <div className="glass" style={{ padding: "2rem", borderRadius: "20px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", justifyContent: "center" }}>
-                <span className="badge badge-info" style={{ marginBottom: "1rem", alignSelf: "flex-start" }}>Stellar Testnet Accounts</span>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", wordBreak: "break-all", marginBottom: "0.75rem" }}>
-                  <strong>Distributor Public Key (Asset Vault):</strong> <br/>
-                  <span style={{ color: "#ffffff", fontFamily: "monospace", fontSize: "0.8rem" }}>{metrics.stellarPublicKey}</span>
-                </p>
-                <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", wordBreak: "break-all" }}>
-                  <strong>Issuer Public Key (Mint Authority):</strong> <br/>
-                  <span style={{ color: "#ffffff", fontFamily: "monospace", fontSize: "0.8rem" }}>{metrics.stellarIssuerPublicKey}</span>
-                </p>
+              <div className="glass" style={{ padding: "1.5rem", borderRadius: "20px", border: "1px solid var(--border)", display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
+                <div>
+                  <span className="badge badge-info" style={{ marginBottom: "1rem", alignSelf: "flex-start" }}>Stellar Testnet Accounts</span>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", wordBreak: "break-all", marginBottom: "0.75rem" }}>
+                    <strong>Distributor Public Key (Asset Vault):</strong> <br/>
+                    <span style={{ color: "#ffffff", fontFamily: "monospace", fontSize: "0.75rem" }}>{metrics.stellarPublicKey}</span>
+                  </p>
+                  <p style={{ fontSize: "0.85rem", color: "var(--text-muted)", wordBreak: "break-all" }}>
+                    <strong>Issuer Public Key (Mint Authority):</strong> <br/>
+                    <span style={{ color: "#ffffff", fontFamily: "monospace", fontSize: "0.75rem" }}>{metrics.stellarIssuerPublicKey}</span>
+                  </p>
+                </div>
               </div>
 
               {/* Metrics Grid */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "1.5rem" }}>
-                <div className="card animate-fade-in" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "150px" }}>
-                  <span style={{ fontSize: "2.5rem", fontWeight: "800" }}>{metrics.eventsCount}</span>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>Events Published</span>
+              <div style={{ display: "grid", gridTemplateRows: "repeat(3, 1fr)", gap: "0.75rem" }}>
+                <div className="card animate-fade-in" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1.25rem", minHeight: "unset", flexDirection: "row" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Events Published</span>
+                  <span style={{ fontSize: "1.5rem", fontWeight: "800" }}>{metrics.eventsCount}</span>
                 </div>
-                <div className="card animate-fade-in" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "150px" }}>
-                  <span style={{ fontSize: "2.5rem", fontWeight: "800" }}>{metrics.totalSold}</span>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>Tickets Sold</span>
+                <div className="card animate-fade-in" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1.25rem", minHeight: "unset", flexDirection: "row" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Tickets Sold</span>
+                  <span style={{ fontSize: "1.5rem", fontWeight: "800" }}>{metrics.totalSold}</span>
                 </div>
-                <div className="card animate-fade-in" style={{ display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", minHeight: "150px" }}>
-                  <span style={{ fontSize: "2.5rem", fontWeight: "800", color: "var(--success)" }}>{metrics.checkedInCount}</span>
-                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)", marginTop: "0.5rem" }}>Attended at Gate</span>
+                <div className="card animate-fade-in" style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0.75rem 1.25rem", minHeight: "unset", flexDirection: "row" }}>
+                  <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>Attended at Gate</span>
+                  <span style={{ fontSize: "1.5rem", fontWeight: "800", color: "var(--success)" }}>{metrics.checkedInCount}</span>
                 </div>
               </div>
             </div>
