@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
 import { EventService } from "../event/event.service";
-import { mintTicket } from "@repo/stellar";
+import { mintTicket, transferTicket, prepareTrustlineTx } from "@repo/stellar";
 import * as crypto from "crypto";
 import { Keypair } from "stellar-sdk";
 
@@ -45,6 +45,7 @@ export class TicketService {
     attendeeName: string;
     attendeeEmail: string;
     paymentMethod: string;
+    stellarPublicKey?: string;
   }) {
     // 1. Load ticket type and event details
     const ticketType = await this.prisma.ticketType.findUnique({
@@ -59,7 +60,11 @@ export class TicketService {
     const event = ticketType.event;
     const tenantId = event.tenantId;
 
-    // 2. Find or create Attendee
+    // 2. Derive/Set Target Public Key
+    const isNonCustodial = !!data.stellarPublicKey;
+    const targetPublicKey = data.stellarPublicKey || this.getAttendeeKeys(data.attendeeEmail, tenantId).publicKey;
+
+    // Find or create Attendee
     let attendee = await this.prisma.attendee.findFirst({
       where: {
         email: data.attendeeEmail.toLowerCase(),
@@ -67,16 +72,20 @@ export class TicketService {
       },
     });
 
-    const attendeeKeys = this.getAttendeeKeys(data.attendeeEmail, tenantId);
-
     if (!attendee) {
       attendee = await this.prisma.attendee.create({
         data: {
           tenantId,
           email: data.attendeeEmail.toLowerCase(),
           name: data.attendeeName,
-          stellarPublicKey: attendeeKeys.publicKey,
+          stellarPublicKey: targetPublicKey,
         },
+      });
+    } else if (isNonCustodial && attendee.stellarPublicKey !== data.stellarPublicKey) {
+      // Update custom wallet key if attendee logs in with a new non-custodial wallet
+      attendee = await this.prisma.attendee.update({
+        where: { id: attendee.id },
+        data: { stellarPublicKey: data.stellarPublicKey },
       });
     }
 
@@ -84,15 +93,31 @@ export class TicketService {
     const tenantKeys = this.tenantService.getTenantKeys(tenantId);
     const assetCode = this.eventService.deriveAssetCode(ticketType.name, event.id);
 
-    // 4. Mint ticket on Stellar Testnet (creates trustline and pays 1 token to attendee)
-    const stellarResult = await mintTicket({
-      distributorSecret: tenantKeys.distributor.secret,
-      destinationSecret: attendeeKeys.secret,
-      destinationPublicKey: attendeeKeys.publicKey,
-      assetCode,
-      issuerPublicKey: tenantKeys.issuer.publicKey,
-      amount: "1.0000000", // Stellar requires 7 decimal places for assets
-    });
+    // 4. Mint ticket on Stellar Testnet
+    let txHash = "";
+    if (isNonCustodial) {
+      // Transfer to existing trustline-enabled wallet
+      const stellarResult = await transferTicket({
+        distributorSecret: tenantKeys.distributor.secret,
+        destinationPublicKey: targetPublicKey,
+        assetCode,
+        issuerPublicKey: tenantKeys.issuer.publicKey,
+        amount: "1.0000000",
+      });
+      txHash = stellarResult.txHash;
+    } else {
+      // Derive custodial keypair and fund/trustline/mint in one backend transaction
+      const attendeeKeys = this.getAttendeeKeys(data.attendeeEmail, tenantId);
+      const stellarResult = await mintTicket({
+        distributorSecret: tenantKeys.distributor.secret,
+        destinationSecret: attendeeKeys.secret,
+        destinationPublicKey: attendeeKeys.publicKey,
+        assetCode,
+        issuerPublicKey: tenantKeys.issuer.publicKey,
+        amount: "1.0000000",
+      });
+      txHash = stellarResult.txHash;
+    }
 
     // 5. Update TicketType sold count
     await this.prisma.ticketType.update({
@@ -106,7 +131,7 @@ export class TicketService {
         ticketTypeId: ticketType.id,
         attendeeId: attendee.id,
         stellarAssetCode: assetCode,
-        stellarTxHash: stellarResult.txHash,
+        stellarTxHash: txHash,
         status: "ACTIVE",
         issuedAt: new Date(),
       },
@@ -127,7 +152,7 @@ export class TicketService {
         currency: ticketType.currency,
         method: data.paymentMethod,
         status: "PAID",
-        stellarTxHash: stellarResult.txHash,
+        stellarTxHash: txHash,
       },
     });
 
@@ -183,6 +208,47 @@ export class TicketService {
           },
         },
       },
+    });
+  }
+
+  async prepareTrustline(ticketTypeId: string, publicKey: string) {
+    const ticketType = await this.prisma.ticketType.findUnique({
+      where: { id: ticketTypeId },
+      include: { event: true },
+    });
+    if (!ticketType) throw new NotFoundException(`Ticket class not found`);
+
+    const event = ticketType.event;
+    const tenantId = event.tenantId;
+
+    const tenantKeys = this.tenantService.getTenantKeys(tenantId);
+    const assetCode = this.eventService.deriveAssetCode(ticketType.name, event.id);
+
+    const xdr = await prepareTrustlineTx({
+      publicKey,
+      assetCode,
+      issuerPublicKey: tenantKeys.issuer.publicKey,
+    });
+
+    return { xdr };
+  }
+
+  async getWalletTickets(publicKey: string) {
+    return this.prisma.ticket.findMany({
+      where: {
+        attendee: {
+          stellarPublicKey: publicKey,
+        },
+      },
+      include: {
+        ticketType: {
+          include: {
+            event: true,
+          },
+        },
+        attendee: true,
+      },
+      orderBy: { createdAt: "desc" },
     });
   }
 }

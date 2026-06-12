@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query } from "@nestjs/common";
 import { TicketService } from "./ticket.service";
 
 @Controller("tickets")
@@ -13,9 +13,23 @@ export class TicketController {
       attendeeName: string;
       attendeeEmail: string;
       paymentMethod: string;
+      stellarPublicKey?: string;
     }
   ) {
     return this.ticketService.purchaseTicket(body);
+  }
+
+  @Get("prepare-trustline")
+  async prepareTrustline(
+    @Query("ticketTypeId") ticketTypeId: string,
+    @Query("publicKey") publicKey: string
+  ) {
+    return this.ticketService.prepareTrustline(ticketTypeId, publicKey);
+  }
+
+  @Get("wallet/:publicKey")
+  async getByWallet(@Param("publicKey") publicKey: string) {
+    return this.ticketService.getWalletTickets(publicKey);
   }
 
   @Get("attendee/:email")
