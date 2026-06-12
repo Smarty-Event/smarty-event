@@ -110,6 +110,32 @@ The repository is organized as a monorepo containing application suites and shar
    ```
    This command starts the NestJS API server (`http://localhost:3001`) and the Next.js Web server (`http://localhost:3000`) concurrently.
 
+### 🐳 Dockerized Setup (Recommended)
+
+You can run the entire platform stack (Next.js web portal, NestJS backend API, PostgreSQL database, and Prisma Studio) using Docker. We provide a shell script `manage.sh` at the root of the project to manage the lifecycle of the stack.
+
+1. **Start the Docker Stack:**
+   ```bash
+   ./manage.sh --start
+   ```
+   This spins up the database, API, web frontend, and database studio containers, wait for them to initialize, and prints out a configuration dashboard:
+   - **Next.js Web App:** `http://localhost:3000`
+   - **NestJS REST API:** `http://localhost:3001`
+   - **Prisma Studio:** `http://localhost:5555` (Web-based database viewer)
+   - **Database Connection:** Host connection at `localhost:5433` (User: `shield` | Password: `shield` | DB: `smarty_events`)
+
+2. **Stop the Docker Stack:**
+   ```bash
+   ./manage.sh --stop
+   ```
+   This stops and tears down all running containers, volumes, and network layers.
+
+3. **Rebuild the Docker Stack:**
+   ```bash
+   ./manage.sh --rebuild
+   ```
+   This rebuilds the Docker images from scratch without using cached layers, then starts the stack.
+
 ---
 
 ## 💻 Available Scripts
