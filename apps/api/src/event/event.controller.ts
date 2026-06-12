@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException } from "@nestjs/common";
+import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException, Patch, Delete } from "@nestjs/common";
 import { EventService } from "./event.service";
 import { FileInterceptor } from "@nestjs/platform-express";
 // @ts-ignore
@@ -109,5 +109,29 @@ export class EventController {
     }
   ) {
     return this.eventService.addTicketType(id, body);
+  }
+
+  @Patch(":id")
+  async update(
+    @Param("id") id: string,
+    @Body()
+    body: {
+      title?: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+      capacity?: number;
+      banner?: string;
+      category?: string;
+      timezone?: string;
+      venue?: any;
+    }
+  ) {
+    return this.eventService.updateEvent(id, body);
+  }
+
+  @Delete(":id")
+  async delete(@Param("id") id: string) {
+    return this.eventService.deleteEvent(id);
   }
 }

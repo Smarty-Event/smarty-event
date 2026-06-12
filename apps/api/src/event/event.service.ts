@@ -158,4 +158,43 @@ export class EventService {
       },
     });
   }
+
+  async updateEvent(
+    id: string,
+    data: {
+      title?: string;
+      description?: string;
+      startDate?: string;
+      endDate?: string;
+      capacity?: number;
+      banner?: string;
+      category?: string;
+      timezone?: string;
+      venue?: any;
+    }
+  ) {
+    await this.getEvent(id);
+
+    return this.prisma.event.update({
+      where: { id },
+      data: {
+        title: data.title,
+        description: data.description,
+        startDate: data.startDate ? new Date(data.startDate) : undefined,
+        endDate: data.endDate ? new Date(data.endDate) : undefined,
+        capacity: data.capacity,
+        banner: data.banner,
+        category: data.category,
+        timezone: data.timezone,
+        venue: data.venue || undefined,
+      },
+    });
+  }
+
+  async deleteEvent(id: string) {
+    await this.getEvent(id);
+    return this.prisma.event.delete({
+      where: { id },
+    });
+  }
 }

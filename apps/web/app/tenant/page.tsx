@@ -56,6 +56,7 @@ export default function OrganizerPortal() {
   // Modals Visibility
   const [showTenantModal, setShowTenantModal] = useState(false);
   const [showEventModal, setShowEventModal] = useState(false);
+  const [showEditEventModal, setShowEditEventModal] = useState(false);
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [showSpeakerModal, setShowSpeakerModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
@@ -72,6 +73,16 @@ export default function OrganizerPortal() {
   const [eventCap, setEventCap] = useState(200);
   const [eventBanner, setEventBanner] = useState("");
   const [eventCategory, setEventCategory] = useState("Technology");
+
+  // Edit Event State
+  const [editingEventId, setEditingEventId] = useState<string | null>(null);
+  const [editEventTitle, setEditEventTitle] = useState("");
+  const [editEventDesc, setEditEventDesc] = useState("");
+  const [editEventStart, setEditEventStart] = useState("2026-09-12T09:00");
+  const [editEventEnd, setEditEventEnd] = useState("2026-09-13T17:00");
+  const [editEventCap, setEditEventCap] = useState(200);
+  const [editEventBanner, setEditEventBanner] = useState("");
+  const [editEventCategory, setEditEventCategory] = useState("Technology");
 
   // Create Ticket Type State
   const [selectedEventId, setSelectedEventId] = useState("");
@@ -299,6 +310,146 @@ export default function OrganizerPortal() {
       setMessage("Simulation Event created locally!");
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const triggerEditEventModal = (event: Event) => {
+    setEditingEventId(event.id);
+    setEditEventTitle(event.title);
+    setEditEventDesc(event.description || "");
+    const formatDateTime = (dateStr: string) => {
+      const d = new Date(dateStr);
+      const year = d.getFullYear();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const hours = String(d.getHours()).padStart(2, "0");
+      const minutes = String(d.getMinutes()).padStart(2, "0");
+      return `${year}-${month}-${day}T${hours}:${minutes}`;
+    };
+    setEditEventStart(formatDateTime(event.startDate));
+    setEditEventEnd(formatDateTime(event.endDate));
+    setEditEventCap(event.capacity);
+    setEditEventBanner(event.banner || "");
+    setEditEventCategory(event.category || "Technology");
+    setShowEditEventModal(true);
+  };
+
+  const handleEditEvent = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingEventId || !editEventTitle) return;
+    setSubmitting(true);
+    setMessage("");
+
+    const payload = {
+      title: editEventTitle,
+      description: editEventDesc,
+      startDate: new Date(editEventStart).toISOString(),
+      endDate: new Date(editEventEnd).toISOString(),
+      capacity: Number(editEventCap),
+      banner: editEventBanner || undefined,
+      category: editEventCategory,
+    };
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/events/${editingEventId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message || "Failed to update event");
+
+      loadTenantData(activeTenant!.id);
+      setShowEditEventModal(false);
+      setEditingEventId(null);
+      setMessage("Event updated successfully!");
+    } catch (err) {
+      console.warn("API offline, simulating Event edit locally.");
+      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
+      const idx = localEvents.findIndex((e: any) => e.id === editingEventId);
+      if (idx !== -1) {
+        localEvents[idx] = {
+          ...localEvents[idx],
+          title: editEventTitle,
+          description: editEventDesc,
+          startDate: editEventStart,
+          endDate: editEventEnd,
+          capacity: Number(editEventCap),
+          banner: editEventBanner || undefined,
+          category: editEventCategory,
+        };
+        localStorage.setItem("mock_events", JSON.stringify(localEvents));
+      }
+
+      loadTenantData(activeTenant!.id);
+      setShowEditEventModal(false);
+      setEditingEventId(null);
+      setMessage("Simulation Event updated locally!");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleDeleteEvent = async (eventId: string) => {
+    if (!confirm("Are you sure you want to delete this event? This will also remove all associated tickets and check-in records.")) return;
+    setLoading(true);
+    setMessage("");
+
+    try {
+      const response = await fetch(`http://localhost:3001/api/events/${eventId}`, {
+        method: "DELETE",
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to delete event");
+      }
+
+      loadTenantData(activeTenant!.id);
+      setMessage("Event deleted successfully!");
+    } catch (err) {
+      console.warn("API offline, simulating Event deletion locally.");
+      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
+      const filtered = localEvents.filter((e: any) => e.id !== eventId);
+      localStorage.setItem("mock_events", JSON.stringify(filtered));
+
+      loadTenantData(activeTenant!.id);
+      setMessage("Simulation Event deleted locally!");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleEditImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploadingFile(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("http://localhost:3001/api/events/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to upload image");
+      }
+
+      setEditEventBanner(data.url);
+      setMessage("Image uploaded successfully!");
+    } catch (err: any) {
+      console.warn("Upload failed, simulating local asset path:", err);
+      setEditEventBanner("https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80");
+      setMessage("Simulation upload completed locally!");
+    } finally {
+      setUploadingFile(false);
     }
   };
 
@@ -663,7 +814,7 @@ export default function OrganizerPortal() {
                           </div>
                           
                           {/* Quick Action buttons */}
-                          <div style={{ display: "flex", gap: "0.75rem" }}>
+                          <div style={{ display: "flex", gap: "0.75rem", flexWrap: "wrap" }}>
                             <button onClick={() => triggerCreateTicketModal(evt.id)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderRadius: "8px" }}>
                               + Add Ticket Asset
                             </button>
@@ -672,6 +823,12 @@ export default function OrganizerPortal() {
                             </button>
                             <button onClick={() => triggerAddSessionModal(evt.id)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderRadius: "8px" }}>
                               + Schedule Session
+                            </button>
+                            <button onClick={() => triggerEditEventModal(evt)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderRadius: "8px", background: "rgba(99, 102, 241, 0.15)", border: "1px solid rgba(99, 102, 241, 0.3)", color: "var(--primary)" }}>
+                              Edit
+                            </button>
+                            <button onClick={() => handleDeleteEvent(evt.id)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#ef4444" }}>
+                              Delete
                             </button>
                           </div>
                         </div>
@@ -872,11 +1029,89 @@ export default function OrganizerPortal() {
                   </label>
                 </div>
               </div>
-
-              <div style={{ display: "flex", gap: "1rem" }}>
+                        <div style={{ display: "flex", gap: "1rem" }}>
                 <button type="button" onClick={() => setShowEventModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
                   {submitting ? "Publishing..." : "Publish"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal 2.5: Edit Event */}
+      {showEditEventModal && (
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
+          <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "550px" }}>
+            <h3 style={{ fontSize: "1.5rem", fontWeight: "800", marginBottom: "0.5rem" }}>Edit Event</h3>
+            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>Modify details of your published event.</p>
+            <form onSubmit={handleEditEvent}>
+              <div className="form-group">
+                <label className="label">Event Title</label>
+                <input type="text" className="input" placeholder="e.g. Stellar Hackathon" value={editEventTitle} onChange={(e) => setEditEventTitle(e.target.value)} required />
+              </div>
+              <div className="form-group">
+                <label className="label">Description</label>
+                <textarea className="textarea" placeholder="Detailed event summary..." value={editEventDesc} onChange={(e) => setEditEventDesc(e.target.value)} style={{ minHeight: "65px" }} />
+              </div>
+              
+              {/* Start & End Dates Row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+                <div className="form-group">
+                  <label className="label">Starts</label>
+                  <input type="datetime-local" className="input" value={editEventStart} onChange={(e) => setEditEventStart(e.target.value)} required />
+                </div>
+                <div className="form-group">
+                  <label className="label">Ends</label>
+                  <input type="datetime-local" className="input" value={editEventEnd} onChange={(e) => setEditEventEnd(e.target.value)} required />
+                </div>
+              </div>
+
+              {/* Capacity & Category Row */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+                <div className="form-group">
+                  <label className="label">Capacity</label>
+                  <input type="number" className="input" value={editEventCap} onChange={(e) => setEditEventCap(Number(e.target.value))} required />
+                </div>
+                <div className="form-group">
+                  <label className="label">Category</label>
+                  <select className="select" value={editEventCategory} onChange={(e) => setEditEventCategory(e.target.value)}>
+                    <option value="Technology">Technology</option>
+                    <option value="Music">Music</option>
+                    <option value="Conference">Conference</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Banner Upload Row */}
+              <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+                <label className="label">Banner Image</label>
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="URL (e.g. https://...) or upload..." 
+                    value={editEventBanner} 
+                    onChange={(e) => setEditEventBanner(e.target.value)} 
+                    style={{ flex: 1 }}
+                  />
+                  <label className="btn btn-secondary" style={{ padding: "0.55rem 1rem", fontSize: "0.85rem", cursor: "pointer", display: "inline-block", margin: 0 }}>
+                    {uploadingFile ? "Uploading..." : "Upload File"}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleEditImageUpload} 
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", gap: "1rem" }}>
+                <button type="button" onClick={() => { setShowEditEventModal(false); setEditingEventId(null); }} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
+                <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
+                  {submitting ? "Saving..." : "Save Changes"}
                 </button>
               </div>
             </form>
