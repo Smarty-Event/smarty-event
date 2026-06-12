@@ -1151,24 +1151,78 @@ export default function OrganizerPortal() {
         document.body
       )}
 
-      {/* Modal 2.5: Edit Event */}
+      {/* Drawer 2.5: Edit Event */}
       {mounted && showEditEventModal && createPortal(
-        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
-          <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "550px" }}>
-            <h3 style={{ fontSize: "1.5rem", fontWeight: "800", marginBottom: "0.5rem" }}>Edit Event</h3>
-            <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginBottom: "1.5rem" }}>Modify details of your published event.</p>
-            <form onSubmit={handleEditEvent}>
+        <div 
+          onClick={() => { setShowEditEventModal(false); setEditingEventId(null); }}
+          style={{ 
+            position: "fixed", 
+            top: 0, 
+            left: 0, 
+            right: 0, 
+            bottom: 0, 
+            background: "rgba(0,0,0,0.6)", 
+            zIndex: 1000, 
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            justifyContent: "flex-end"
+          }}
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="glass animate-slide-in-right" 
+            style={{ 
+              padding: "2.5rem", 
+              borderLeft: "1px solid var(--border)", 
+              borderTop: "none",
+              borderBottom: "none",
+              borderRight: "none",
+              borderRadius: "0px",
+              width: "100%", 
+              maxWidth: "500px",
+              height: "100vh",
+              overflowY: "auto",
+              display: "flex",
+              flexDirection: "column"
+            }}
+          >
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "1.5rem" }}>
+              <div>
+                <h3 style={{ fontSize: "1.5rem", fontWeight: "800" }}>Edit Event</h3>
+                <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", marginTop: "0.25rem" }}>Modify details of your published event.</p>
+              </div>
+              <button 
+                type="button"
+                onClick={() => { setShowEditEventModal(false); setEditingEventId(null); }} 
+                style={{
+                  background: "transparent",
+                  border: "none",
+                  color: "var(--text-muted)",
+                  fontSize: "1.5rem",
+                  cursor: "pointer",
+                  padding: "0.25rem",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  lineHeight: 1
+                }}
+              >
+                ✕
+              </button>
+            </div>
+            
+            <form onSubmit={handleEditEvent} style={{ display: "flex", flexDirection: "column", gap: "1.25rem", flexGrow: 1 }}>
               <div className="form-group">
                 <label className="label">Event Title</label>
                 <input type="text" className="input" placeholder="e.g. Stellar Hackathon" value={editEventTitle} onChange={(e) => setEditEventTitle(e.target.value)} required />
               </div>
               <div className="form-group">
                 <label className="label">Description</label>
-                <textarea className="textarea" placeholder="Detailed event summary..." value={editEventDesc} onChange={(e) => setEditEventDesc(e.target.value)} style={{ minHeight: "65px" }} />
+                <textarea className="textarea" placeholder="Detailed event summary..." value={editEventDesc} onChange={(e) => setEditEventDesc(e.target.value)} style={{ minHeight: "80px", resize: "vertical" }} />
               </div>
               
               {/* Start & End Dates Row */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <div className="form-group">
                   <label className="label">Starts</label>
                   <input type="datetime-local" className="input" value={editEventStart} onChange={(e) => setEditEventStart(e.target.value)} required />
@@ -1180,7 +1234,7 @@ export default function OrganizerPortal() {
               </div>
 
               {/* Capacity & Category Row */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1rem" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
                 <div className="form-group">
                   <label className="label">Capacity</label>
                   <input type="number" className="input" value={editEventCap} onChange={(e) => setEditEventCap(Number(e.target.value))} required />
@@ -1196,7 +1250,7 @@ export default function OrganizerPortal() {
               </div>
 
               {/* Banner Upload Row */}
-              <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+              <div className="form-group">
                 <label className="label">Banner Image</label>
                 <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
                   <input 
@@ -1225,7 +1279,7 @@ export default function OrganizerPortal() {
                     overflow: "hidden", 
                     border: "1px solid var(--border)",
                     position: "relative",
-                    height: "120px"
+                    height: "140px"
                   }}>
                     <img 
                       src={editEventBanner} 
@@ -1258,7 +1312,7 @@ export default function OrganizerPortal() {
                 )}
               </div>
 
-              <div style={{ display: "flex", gap: "1rem" }}>
+              <div style={{ display: "flex", gap: "1rem", marginTop: "auto", paddingTop: "1.5rem" }}>
                 <button type="button" onClick={() => { setShowEditEventModal(false); setEditingEventId(null); }} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
                 <button type="submit" className="btn btn-primary" style={{ flex: 1 }} disabled={submitting}>
                   {submitting ? "Saving..." : "Save Changes"}
