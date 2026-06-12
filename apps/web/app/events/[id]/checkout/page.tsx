@@ -28,6 +28,31 @@ function CheckoutContent() {
   const [bookingSuccess, setBookingSuccess] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
+  // Wallet states
+  const [walletType, setWalletType] = useState<"custodial" | "non-custodial">("custodial");
+  const [connectedPublicKey, setConnectedPublicKey] = useState("");
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+
+  const connectFreighter = async () => {
+    if (typeof window === "undefined" || !(window as any).freighterApi) {
+      alert("Freighter extension is not installed. Please install Freighter to connect your wallet.");
+      return;
+    }
+    setIsConnectingWallet(true);
+    try {
+      const { publicKey } = await (window as any).freighterApi.getPublicKey();
+      if (publicKey) {
+        setConnectedPublicKey(publicKey);
+        setWalletType("non-custodial");
+      }
+    } catch (err: any) {
+      console.error("Failed to connect Freighter", err);
+      alert(err.message || "Failed to connect wallet.");
+    } finally {
+      setIsConnectingWallet(false);
+    }
+  };
+
   useEffect(() => {
     fetch(`http://localhost:3001/api/events/${eventId}`)
       .then((res) => res.json())
@@ -70,14 +95,51 @@ function CheckoutContent() {
     setIsSubmitting(true);
     setErrorMsg("");
 
-    const payload = {
-      ticketTypeId: selectedTicket.id,
-      attendeeName: name,
-      attendeeEmail: email,
-      paymentMethod,
-    };
+    const isNonCustodial = paymentMethod === "USDC" && walletType === "non-custodial";
+
+    if (isNonCustodial && !connectedPublicKey) {
+      setErrorMsg("Please connect your Freighter wallet first.");
+      setIsSubmitting(false);
+      return;
+    }
 
     try {
+      if (isNonCustodial) {
+        // 1. Fetch unsigned ChangeTrust trustline XDR from NestJS
+        const trustRes = await fetch(
+          `http://localhost:3001/api/tickets/prepare-trustline?ticketTypeId=${selectedTicket.id}&publicKey=${connectedPublicKey}`
+        );
+        if (!trustRes.ok) {
+          const errData = await trustRes.json();
+          throw new Error(errData.message || "Failed to prepare on-chain trustline.");
+        }
+        const { xdr } = await trustRes.json();
+
+        // 2. Sign transaction XDR via Freighter wallet
+        const signedXdr = await (window as any).freighterApi.signTransaction(xdr, {
+          network: "TESTNET",
+        });
+
+        // 3. Submit signed XDR to Horizon Testnet directly
+        const horizonRes = await fetch("https://horizon-testnet.stellar.org/transactions", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: new URLSearchParams({ tx: signedXdr }),
+        });
+        if (!horizonRes.ok) {
+          const horizonErr = await horizonRes.json();
+          throw new Error(horizonErr.title || "Stellar Ledger transaction submission failed.");
+        }
+      }
+
+      const payload = {
+        ticketTypeId: selectedTicket.id,
+        attendeeName: name,
+        attendeeEmail: email,
+        paymentMethod,
+        stellarPublicKey: isNonCustodial ? connectedPublicKey : undefined,
+      };
+
       const response = await fetch("http://localhost:3001/api/tickets/buy", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -92,6 +154,13 @@ function CheckoutContent() {
       setBookingSuccess(resData);
     } catch (err: any) {
       console.warn("API Error, running simulation fallback:", err);
+      // If we are in non-custodial wallet mode, fallback to simulation is not possible, we fail
+      if (isNonCustodial) {
+        setErrorMsg(err.message || "On-chain wallet ticket minting failed.");
+        setIsSubmitting(false);
+        return;
+      }
+
       // Run simulation checkout fallback if API is offline
       setTimeout(() => {
         const mockResult = {
@@ -295,6 +364,74 @@ function CheckoutContent() {
                 <option value="BANK_TRANSFER">Bank Direct Transfer</option>
               </select>
             </div>
+
+            {paymentMethod === "USDC" && (
+              <div style={{
+                background: "rgba(255, 255, 255, 0.02)",
+                border: "1px solid var(--border)",
+                borderRadius: "12px",
+                padding: "1.25rem",
+                marginBottom: "1.5rem",
+                display: "flex",
+                flexDirection: "column",
+                gap: "1rem"
+              }}>
+                <label className="label" style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Wallet Configuration Selection</label>
+                <div style={{ display: "flex", gap: "1.5rem" }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem" }}>
+                    <input 
+                      type="radio" 
+                      name="walletType" 
+                      checked={walletType === "custodial"} 
+                      onChange={() => setWalletType("custodial")} 
+                    />
+                    Custodial (Automated Setup)
+                  </label>
+                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem" }}>
+                    <input 
+                      type="radio" 
+                      name="walletType" 
+                      checked={walletType === "non-custodial"} 
+                      onChange={() => setWalletType("non-custodial")} 
+                    />
+                    Connected Wallet (Web3 Extension)
+                  </label>
+                </div>
+
+                {walletType === "non-custodial" && (
+                  <div style={{ marginTop: "0.5rem", borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
+                    {connectedPublicKey ? (
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                        <div>
+                          <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>CONNECTED PUBLIC KEY:</span>
+                          <span style={{ fontSize: "0.85rem", color: "var(--primary)", fontFamily: "monospace", wordBreak: "break-all" }}>
+                            {connectedPublicKey.substring(0, 12)}...{connectedPublicKey.substring(connectedPublicKey.length - 12)}
+                          </span>
+                        </div>
+                        <button 
+                          type="button" 
+                          onClick={connectFreighter} 
+                          className="btn btn-secondary" 
+                          style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem", borderRadius: "8px" }}
+                        >
+                          Use Different
+                        </button>
+                      </div>
+                    ) : (
+                      <button 
+                        type="button" 
+                        onClick={connectFreighter} 
+                        disabled={isConnectingWallet}
+                        className="btn btn-secondary" 
+                        style={{ width: "100%", padding: "0.75rem", fontSize: "0.9rem", borderRadius: "10px", background: "rgba(99, 102, 241, 0.15)", border: "1px solid rgba(99, 102, 241, 0.3)", color: "var(--primary)" }}
+                      >
+                        {isConnectingWallet ? "Connecting to extension..." : "🔌 Connect Freighter Wallet"}
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <button type="submit" className="btn btn-primary" style={{ width: "100%", height: "50px", fontSize: "1rem" }}>
               Pay & Mint Ticket Asset
