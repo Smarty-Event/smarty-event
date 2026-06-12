@@ -590,7 +590,7 @@ export const FALLBACK_EVENTS_DETAIL: Record<string, EventDetail> = {
     description: "Focusing on sustainability, carbon accounting protocols, and clean-energy infrastructure. Learn how companies use public ledger technologies to verify environmental impacts.",
     startDate: "2026-10-22T09:00:00.000Z",
     endDate: "2026-10-23T17:00:00.000Z",
-    banner: "https://images.unsplash.com/photo-1473308499583-b2db3c44c7b8?auto=format&fit=crop&w=1200&q=80",
+    banner: "https://images.unsplash.com/photo-1509391366360-2e959784a276?auto=format&fit=crop&w=1200&q=80",
     category: "Conference",
     capacity: 350,
     speakers: [
