@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 
 interface Tenant {
   id: string;
@@ -101,11 +102,13 @@ export default function OrganizerPortal() {
   const [sessionEnd, setSessionEnd] = useState("2026-09-12T11:00");
 
   const [loading, setLoading] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
   const [errorMsg, setErrorMsg] = useState("");
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     loadTenants();
     const storedUser = localStorage.getItem("smarty_user");
     if (storedUser) {
@@ -122,6 +125,18 @@ export default function OrganizerPortal() {
       loadTenantData(activeTenant.id);
     }
   }, [activeTenant]);
+
+  useEffect(() => {
+    const isAnyModalOpen = showTenantModal || showEventModal || showEditEventModal || showTicketModal || showSpeakerModal || showSessionModal;
+    if (isAnyModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showTenantModal, showEventModal, showEditEventModal, showTicketModal, showSpeakerModal, showSessionModal]);
 
   const loadTenants = () => {
     fetch("http://localhost:3001/api/tenants")
@@ -927,7 +942,7 @@ export default function OrganizerPortal() {
       {/* --- MODAL LAYOUT OVERLAYS --- */}
 
       {/* Modal 1: Create Tenant Space */}
-      {showTenantModal && (
+      {mounted && showTenantModal && createPortal(
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
           <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "450px" }}>
             <h3 style={{ fontSize: "1.5rem", fontWeight: "800", marginBottom: "0.5rem" }}>Onboard New Space</h3>
@@ -959,11 +974,12 @@ export default function OrganizerPortal() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Drawer: Create Event */}
-      {showEventModal && (
+      {mounted && showEventModal && createPortal(
         <div 
           onClick={() => setShowEventModal(false)}
           style={{ 
@@ -1131,11 +1147,12 @@ export default function OrganizerPortal() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal 2.5: Edit Event */}
-      {showEditEventModal && (
+      {mounted && showEditEventModal && createPortal(
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
           <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "550px" }}>
             <h3 style={{ fontSize: "1.5rem", fontWeight: "800", marginBottom: "0.5rem" }}>Edit Event</h3>
@@ -1249,11 +1266,12 @@ export default function OrganizerPortal() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal 3: Deploy Ticket Tier */}
-      {showTicketModal && (
+      {mounted && showTicketModal && createPortal(
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
           <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "450px" }}>
             <h3 style={{ fontSize: "1.5rem", fontWeight: "800", marginBottom: "0.5rem" }}>Deploy Ticket Class</h3>
@@ -1289,11 +1307,12 @@ export default function OrganizerPortal() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal 4: Add Speaker */}
-      {showSpeakerModal && (
+      {mounted && showSpeakerModal && createPortal(
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
           <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "450px" }}>
             <h3 style={{ fontSize: "1.5rem", fontWeight: "800", marginBottom: "0.5rem" }}>Add Speaker Profile</h3>
@@ -1315,11 +1334,12 @@ export default function OrganizerPortal() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* Modal 5: Add Session */}
-      {showSessionModal && (
+      {mounted && showSessionModal && createPortal(
         <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
           <div className="glass animate-fade-in" style={{ padding: "2.5rem", borderRadius: "20px", border: "1px solid var(--border)", width: "100%", maxWidth: "450px" }}>
             <h3 style={{ fontSize: "1.5rem", fontWeight: "800", marginBottom: "0.5rem" }}>Schedule Session</h3>
@@ -1351,7 +1371,8 @@ export default function OrganizerPortal() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
     </div>
