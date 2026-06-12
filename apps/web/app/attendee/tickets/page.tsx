@@ -299,6 +299,9 @@ export default function AttendeeWallet() {
                   boxShadow: walletProvider === "albedo" ? "0 4px 12px rgba(99, 102, 241, 0.1)" : "none"
                 }}
               >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 0.4rem auto", display: "block", color: walletProvider === "albedo" ? "var(--primary)" : "var(--text-muted)" }}>
+                  <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                </svg>
                 <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Albedo Wallet</span>
                 <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>No Extension Required</span>
               </div>
@@ -319,6 +322,9 @@ export default function AttendeeWallet() {
                   boxShadow: walletProvider === "freighter" ? "0 4px 12px rgba(99, 102, 241, 0.1)" : "none"
                 }}
               >
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 0.4rem auto", display: "block", color: walletProvider === "freighter" ? "var(--primary)" : "var(--text-muted)" }}>
+                  <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                </svg>
                 <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Freighter Wallet</span>
                 <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>Browser Extension</span>
               </div>

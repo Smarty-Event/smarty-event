@@ -452,7 +452,9 @@ function CheckoutContent() {
                       boxShadow: walletType === "custodial" ? "0 4px 12px rgba(99, 102, 241, 0.15)" : "none"
                     }}
                   >
-                    <div style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>🛡️</div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 0.5rem auto", display: "block", color: walletType === "custodial" ? "var(--primary)" : "var(--text-muted)" }}>
+                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                    </svg>
                     <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Custodial Wallet</span>
                     <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>Automated Setup (No Wallet Needed)</span>
                   </div>
@@ -470,7 +472,10 @@ function CheckoutContent() {
                       boxShadow: walletType === "non-custodial" ? "0 4px 12px rgba(99, 102, 241, 0.15)" : "none"
                     }}
                   >
-                    <div style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>🔌</div>
+                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 0.5rem auto", display: "block", color: walletType === "non-custodial" ? "var(--primary)" : "var(--text-muted)" }}>
+                      <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                      <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                    </svg>
                     <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Connected Wallet</span>
                     <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>Browser Extension / Popup</span>
                   </div>
@@ -497,6 +502,9 @@ function CheckoutContent() {
                             boxShadow: walletProvider === "albedo" ? "0 4px 12px rgba(99, 102, 241, 0.1)" : "none"
                           }}
                         >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 0.4rem auto", display: "block", color: walletProvider === "albedo" ? "var(--primary)" : "var(--text-muted)" }}>
+                            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                          </svg>
                           <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Albedo Wallet</span>
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>No Extension Required</span>
                         </div>
@@ -517,6 +525,9 @@ function CheckoutContent() {
                             boxShadow: walletProvider === "freighter" ? "0 4px 12px rgba(99, 102, 241, 0.1)" : "none"
                           }}
                         >
+                          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{ margin: "0 auto 0.4rem auto", display: "block", color: walletProvider === "freighter" ? "var(--primary)" : "var(--text-muted)" }}>
+                            <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
+                          </svg>
                           <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Freighter Wallet</span>
                           <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>Browser Extension</span>
                         </div>
