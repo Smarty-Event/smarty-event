@@ -1509,15 +1509,13 @@ export default function OrganizerPortal() {
                 <label className="label">Description</label>
                 <input type="text" className="input" placeholder="Short schedule description" value={sessionDesc} onChange={(e) => setSessionDesc(e.target.value)} />
               </div>
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem", marginBottom: "1.5rem" }}>
-                <div className="form-group">
-                  <label className="label">Start Time</label>
-                  <input type="datetime-local" className="input" value={sessionStart} onChange={(e) => setSessionStart(e.target.value)} />
-                </div>
-                <div className="form-group">
-                  <label className="label">End Time</label>
-                  <input type="datetime-local" className="input" value={sessionEnd} onChange={(e) => setSessionEnd(e.target.value)} />
-                </div>
+              <div className="form-group">
+                <label className="label">Start Time</label>
+                <input type="datetime-local" className="input" value={sessionStart} onChange={(e) => setSessionStart(e.target.value)} />
+              </div>
+              <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+                <label className="label">End Time</label>
+                <input type="datetime-local" className="input" value={sessionEnd} onChange={(e) => setSessionEnd(e.target.value)} />
               </div>
               <div style={{ display: "flex", gap: "1rem" }}>
                 <button type="button" onClick={() => setShowSessionModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
