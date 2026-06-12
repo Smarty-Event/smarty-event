@@ -4,18 +4,7 @@ import { useEffect, useState, Suspense } from "react";
 import { useSearchParams, useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-interface TicketType {
-  id: string;
-  name: string;
-  price: number;
-  currency: string;
-}
-
-interface EventDetail {
-  id: string;
-  title: string;
-  ticketTypes: TicketType[];
-}
+import { EventDetail, TicketType, FALLBACK_EVENTS_DETAIL } from "../../../fallbackData";
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -39,15 +28,6 @@ function CheckoutContent() {
   const [bookingSuccess, setBookingSuccess] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
-  const fallbackEvent: EventDetail = {
-    id: "demo-stellar-summit",
-    title: "Stellar Global Summit 2026",
-    ticketTypes: [
-      { id: "tkt-vip", name: "VIP Backstage Pass", price: 15000, currency: "USDC" },
-      { id: "tkt-ga", name: "General Admission", price: 4500, currency: "USDC" },
-    ],
-  };
-
   useEffect(() => {
     fetch(`http://localhost:3001/api/events/${eventId}`)
       .then((res) => res.json())
@@ -57,15 +37,25 @@ function CheckoutContent() {
           const tkt = data.ticketTypes.find((t: any) => t.id === ticketTypeId);
           setSelectedTicket(tkt || data.ticketTypes[0] || null);
         } else {
-          setEvent(fallbackEvent);
-          const tkt = fallbackEvent.ticketTypes.find((t) => t.id === ticketTypeId);
-          setSelectedTicket((tkt || fallbackEvent.ticketTypes[0]) as TicketType);
+          const fallback = FALLBACK_EVENTS_DETAIL[eventId];
+          setEvent(fallback || null);
+          if (fallback) {
+            const tkt = fallback.ticketTypes.find((t) => t.id === ticketTypeId);
+            setSelectedTicket(tkt || fallback.ticketTypes[0] || null);
+          } else {
+            setSelectedTicket(null);
+          }
         }
       })
       .catch(() => {
-        setEvent(fallbackEvent);
-        const tkt = fallbackEvent.ticketTypes.find((t) => t.id === ticketTypeId);
-        setSelectedTicket((tkt || fallbackEvent.ticketTypes[0]) as TicketType);
+        const fallback = FALLBACK_EVENTS_DETAIL[eventId];
+        setEvent(fallback || null);
+        if (fallback) {
+          const tkt = fallback.ticketTypes.find((t) => t.id === ticketTypeId);
+          setSelectedTicket(tkt || fallback.ticketTypes[0] || null);
+        } else {
+          setSelectedTicket(null);
+        }
       })
       .finally(() => setLoading(false));
   }, [eventId, ticketTypeId]);

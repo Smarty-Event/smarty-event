@@ -4,44 +4,7 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
-interface Speaker {
-  id: string;
-  name: string;
-  bio?: string;
-  avatar?: string;
-}
-
-interface Session {
-  id: string;
-  title: string;
-  description?: string;
-  startTime: string;
-  endTime: string;
-}
-
-interface TicketType {
-  id: string;
-  name: string;
-  price: number;
-  currency: string;
-  quantity: number;
-  sold: number;
-  benefits?: string;
-}
-
-interface EventDetail {
-  id: string;
-  title: string;
-  description: string;
-  startDate: string;
-  endDate: string;
-  banner?: string;
-  category: string;
-  capacity: number;
-  speakers: Speaker[];
-  sessions: Session[];
-  ticketTypes: TicketType[];
-}
+import { EventDetail, FALLBACK_EVENTS_DETAIL } from "../../fallbackData";
 
 export default function EventPage() {
   const params = useParams();
@@ -49,107 +12,6 @@ export default function EventPage() {
   const id = params.id as string;
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
-
-  const fallbackEvents: Record<string, EventDetail> = {
-    "demo-stellar-summit": {
-      id: "demo-stellar-summit",
-      title: "Stellar Global Summit 2026",
-      description: "Join developers, node operators, and blockchain enthusiasts from across the globe to discuss the future of the Stellar network, Smart Contracts (Soroban), and cross-border payment rails. Explore real-world integrations, meet industry leaders, and contribute to standardizing payment structures on the decentralized horizon.",
-      startDate: "2026-09-12T09:00:00.000Z",
-      endDate: "2026-09-13T17:00:00.000Z",
-      banner: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80",
-      category: "Technology",
-      capacity: 500,
-      speakers: [
-        {
-          id: "spk-1",
-          name: "Jed McCaleb",
-          bio: "Co-founder of Stellar Development Foundation. Pioneer in consensus systems and distributed payment ledgers.",
-          avatar: "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=300&q=80"
-        },
-        {
-          id: "spk-2",
-          name: "Dr. Karen Martinez",
-          bio: "Principal Research Lead on Smart Contract compilers and decentralized security frameworks.",
-          avatar: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=300&q=80"
-        }
-      ],
-      sessions: [
-        {
-          id: "sess-1",
-          title: "Opening Keynote: Stellar Protocol Roadmap",
-          description: "An overview of core development efforts, protocol updates, and network performance targets.",
-          startTime: "2026-09-12T10:00:00.000Z",
-          endTime: "2026-09-12T11:30:00.000Z"
-        },
-        {
-          id: "sess-2",
-          title: "Hands-on Soroban Smart Contracts",
-          description: "A technical coding workshop deploying Rust-based smart contracts onto the local standalone node.",
-          startTime: "2026-09-12T13:00:00.000Z",
-          endTime: "2026-09-12T15:00:00.000Z"
-        }
-      ],
-      ticketTypes: [
-        {
-          id: "tkt-vip",
-          name: "VIP Backstage Pass",
-          price: 15000,
-          currency: "USDC",
-          quantity: 50,
-          sold: 12,
-          benefits: '["Priority Seating", "Speaker Lounge Access", "Stellar Swag Box", "On-Chain NFT Attendee Badge"]'
-        },
-        {
-          id: "tkt-ga",
-          name: "General Admission",
-          price: 4500,
-          currency: "USDC",
-          quantity: 450,
-          sold: 140,
-          benefits: '["Keynote Access", "Sponsor Booth Access", "Event Drinks Included"]'
-        }
-      ]
-    },
-    "demo-web3-music": {
-      id: "demo-web3-music",
-      title: "Decentralized Beats Music Fest",
-      description: "An open-air music festival where entry tickets are custom non-fungible Stellar assets. Enjoy live music, virtual merchandise shops, and interactive performance stages in an immersive cyber-organic forest setup.",
-      startDate: "2026-10-24T18:00:00.000Z",
-      endDate: "2026-10-25T02:00:00.000Z",
-      banner: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=1200&q=80",
-      category: "Music",
-      capacity: 1500,
-      speakers: [
-        {
-          id: "spk-dj",
-          name: "DJ Horizon",
-          bio: "Crypto-music producer blending classic deep house rhythms with modular synthesis layers.",
-          avatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80"
-        }
-      ],
-      sessions: [
-        {
-          id: "sess-music",
-          title: "Main Stage: DJ Horizon Sunset Session",
-          description: "Opening sunset electronic synth set with live projection mappings.",
-          startTime: "2026-10-24T18:30:00.000Z",
-          endTime: "2026-10-24T20:30:00.000Z"
-        }
-      ],
-      ticketTypes: [
-        {
-          id: "tkt-music-ga",
-          name: "Festival Ticket",
-          price: 1500,
-          currency: "USDC",
-          quantity: 1500,
-          sold: 430,
-          benefits: '["Entrance Admission", "Free Drink Voucher"]'
-        }
-      ]
-    }
-  };
 
   useEffect(() => {
     fetch(`http://localhost:3001/api/events/${id}`)
@@ -159,11 +21,11 @@ export default function EventPage() {
           // If the JSON response has benefits, parse it if it is a string
           setEvent(data);
         } else {
-          setEvent(fallbackEvents[id] || null);
+          setEvent(FALLBACK_EVENTS_DETAIL[id] || null);
         }
       })
       .catch(() => {
-        setEvent(fallbackEvents[id] || null);
+        setEvent(FALLBACK_EVENTS_DETAIL[id] || null);
       })
       .finally(() => setLoading(false));
   }, [id]);

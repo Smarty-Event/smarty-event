@@ -3,47 +3,12 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 
-interface Event {
-  id: string;
-  title: string;
-  description: string;
-  startDate: string;
-  banner: string;
-  category: string;
-  capacity: number;
-  ticketTypes: Array<{
-    price: number;
-    currency: string;
-  }>;
-}
+import { Event, FALLBACK_EVENTS } from "./fallbackData";
 
 export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("All");
-
-  const fallbackEvents: Event[] = [
-    {
-      id: "demo-stellar-summit",
-      title: "Stellar Global Summit 2026",
-      description: "Join developers, node operators, and blockchain enthusiasts from across the globe to discuss the future of the Stellar network, Smart Contracts (Soroban), and cross-border payment rails.",
-      startDate: "2026-09-12T09:00:00.000Z",
-      banner: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=800&q=80",
-      category: "Technology",
-      capacity: 500,
-      ticketTypes: [{ price: 4500, currency: "USDC" }],
-    },
-    {
-      id: "demo-web3-music",
-      title: "Decentralized Beats Music Fest",
-      description: "An open-air music festival where entry tickets are custom non-fungible Stellar assets. Featuring top indie artists and electronic music sets.",
-      startDate: "2026-10-24T18:00:00.000Z",
-      banner: "https://images.unsplash.com/photo-1470225620780-dba8ba36b745?auto=format&fit=crop&w=800&q=80",
-      category: "Music",
-      capacity: 1500,
-      ticketTypes: [{ price: 1500, currency: "USDC" }],
-    },
-  ];
 
   useEffect(() => {
     fetch("http://localhost:3001/api/events")
@@ -52,12 +17,12 @@ export default function Home() {
         if (Array.isArray(data) && data.length > 0) {
           setEvents(data);
         } else {
-          setEvents(fallbackEvents);
+          setEvents(FALLBACK_EVENTS);
         }
       })
       .catch(() => {
         // Fallback to demo events if API is offline
-        setEvents(fallbackEvents);
+        setEvents(FALLBACK_EVENTS);
       })
       .finally(() => setLoading(false));
   }, []);
