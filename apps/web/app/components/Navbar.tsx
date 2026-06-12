@@ -1,14 +1,53 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+
+interface User {
+  email: string;
+  tenantName: string;
+}
 
 export default function Navbar() {
   const pathname = usePathname();
+  const router = useRouter();
+  const [user, setUser] = useState<User | null>(null);
+
+  useEffect(() => {
+    // Read user on load
+    const checkAuth = () => {
+      const storedUser = localStorage.getItem("smarty_user");
+      if (storedUser) {
+        try {
+          setUser(JSON.parse(storedUser));
+        } catch {
+          setUser(null);
+        }
+      } else {
+        setUser(null);
+      }
+    };
+
+    checkAuth();
+
+    // Listen for storage events (e.g. login updates storage)
+    window.addEventListener("storage", checkAuth);
+    return () => window.removeEventListener("storage", checkAuth);
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.removeItem("smarty_auth_token");
+    localStorage.removeItem("smarty_user");
+    setUser(null);
+    // Dispatch event to sync other tabs
+    window.dispatchEvent(new Event("storage"));
+    router.push("/");
+  };
 
   const navItems = [
     { name: "Discover Events", path: "/" },
-    { name: "Organizer Portal", path: "/tenant" },
+    ...(user ? [{ name: "Organizer Portal", path: "/tenant" }] : []),
     { name: "My Tickets", path: "/attendee/tickets" },
     { name: "Gate Check-In", path: "/checkin" },
   ];
@@ -47,7 +86,7 @@ export default function Navbar() {
         </Link>
 
         {/* Links */}
-        <div style={{ display: "flex", gap: "1.5rem" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
           {navItems.map((item) => {
             const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
             return (
@@ -77,6 +116,29 @@ export default function Navbar() {
               </Link>
             );
           })}
+
+          <span style={{ borderLeft: "1px solid var(--border)", height: "20px" }} />
+
+          {/* User Section / Auth buttons */}
+          {user ? (
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
+                Logged in: <strong style={{ color: "#ffffff" }}>{user.tenantName}</strong>
+              </span>
+              <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem", borderRadius: "8px" }}>
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", gap: "1rem" }}>
+              <Link href="/login" className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem", borderRadius: "8px" }}>
+                Sign In
+              </Link>
+              <Link href="/register" className="btn btn-primary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem", borderRadius: "8px" }}>
+                Sign Up
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </nav>
