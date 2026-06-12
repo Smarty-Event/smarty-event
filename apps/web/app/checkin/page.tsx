@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { API_BASE_URL } from "../config";
 
 export default function GateScanner() {
   const [qrToken, setQrToken] = useState("");
@@ -23,7 +24,7 @@ export default function GateScanner() {
     };
 
     try {
-      const response = await fetch("http://localhost:3001/api/checkin", {
+      const response = await fetch(`${API_BASE_URL}/api/checkin`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

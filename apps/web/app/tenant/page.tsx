@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
+import { API_BASE_URL } from "../config";
 
 interface Tenant {
   id: string;
@@ -144,7 +145,7 @@ export default function OrganizerPortal() {
   }, [showTenantModal, showEventModal, showEditEventModal, showTicketModal, showSpeakerModal, showSessionModal, showDeleteConfirmModal]);
 
   const loadTenants = () => {
-    fetch("http://localhost:3001/api/tenants")
+    fetch(`${API_BASE_URL}/api/tenants`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -172,7 +173,7 @@ export default function OrganizerPortal() {
   const loadTenantData = (tenantId: string) => {
     setLoading(true);
     // Fetch metrics
-    fetch(`http://localhost:3001/api/tenants/${tenantId}/metrics`)
+    fetch(`${API_BASE_URL}/api/tenants/${tenantId}/metrics`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.name) {
@@ -186,7 +187,7 @@ export default function OrganizerPortal() {
       });
 
     // Fetch events
-    fetch(`http://localhost:3001/api/events?tenantId=${tenantId}`)
+    fetch(`${API_BASE_URL}/api/events?tenantId=${tenantId}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -235,7 +236,7 @@ export default function OrganizerPortal() {
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/tenants", {
+      const response = await fetch(`${API_BASE_URL}/api/tenants`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: newTenantName, slug: newTenantSlug }),
@@ -287,7 +288,7 @@ export default function OrganizerPortal() {
     };
 
     try {
-      const response = await fetch(`http://localhost:3001/api/events?tenantId=${activeTenant.id}`, {
+      const response = await fetch(`${API_BASE_URL}/api/events?tenantId=${activeTenant.id}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -371,7 +372,7 @@ export default function OrganizerPortal() {
     };
 
     try {
-      const response = await fetch(`http://localhost:3001/api/events/${editingEventId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/events/${editingEventId}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -423,7 +424,7 @@ export default function OrganizerPortal() {
     setMessage("");
 
     try {
-      const response = await fetch(`http://localhost:3001/api/events/${eventId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/events/${eventId}`, {
         method: "DELETE",
       });
       if (!response.ok) {
@@ -460,7 +461,7 @@ export default function OrganizerPortal() {
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/events/upload", {
+      const response = await fetch(`${API_BASE_URL}/api/events/upload`, {
         method: "POST",
         body: formData,
       });
@@ -496,7 +497,7 @@ export default function OrganizerPortal() {
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/events/upload", {
+      const response = await fetch(`${API_BASE_URL}/api/events/upload`, {
         method: "POST",
         body: formData,
       });
@@ -530,7 +531,7 @@ export default function OrganizerPortal() {
     setMessage("");
 
     try {
-      const response = await fetch("http://localhost:3001/api/events/upload", {
+      const response = await fetch(`${API_BASE_URL}/api/events/upload`, {
         method: "POST",
         body: formData,
       });
@@ -566,7 +567,7 @@ export default function OrganizerPortal() {
     };
 
     try {
-      const response = await fetch(`http://localhost:3001/api/events/${selectedEventId}/ticket-types`, {
+      const response = await fetch(`${API_BASE_URL}/api/events/${selectedEventId}/ticket-types`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -615,7 +616,7 @@ export default function OrganizerPortal() {
     setSubmitting(true);
 
     try {
-      const response = await fetch(`http://localhost:3001/api/events/${selectedEventId}/speakers`, {
+      const response = await fetch(`${API_BASE_URL}/api/events/${selectedEventId}/speakers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: speakerName, bio: speakerBio, avatar: speakerAvatar }),
@@ -666,7 +667,7 @@ export default function OrganizerPortal() {
     };
 
     try {
-      const response = await fetch(`http://localhost:3001/api/events/${selectedEventId}/sessions`, {
+      const response = await fetch(`${API_BASE_URL}/api/events/${selectedEventId}/sessions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

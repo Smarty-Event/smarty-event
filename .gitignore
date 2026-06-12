@@ -39,3 +39,7 @@ yarn-error.log*
 
 # Uploads directory
 apps/api/uploads
+
+# Local Caddy HTTPS setup
+Caddyfile
+.caddy/

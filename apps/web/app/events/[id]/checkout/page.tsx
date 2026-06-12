@@ -5,6 +5,7 @@ import { useSearchParams, useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { EventDetail, TicketType, FALLBACK_EVENTS_DETAIL } from "../../../fallbackData";
+import { API_BASE_URL } from "../../../config";
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -98,7 +99,7 @@ function CheckoutContent() {
   };
 
   useEffect(() => {
-    fetch(`http://localhost:3001/api/events/${eventId}`)
+    fetch(`${API_BASE_URL}/api/events/${eventId}`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.title) {
@@ -151,7 +152,7 @@ function CheckoutContent() {
       if (isNonCustodial) {
         // 1. Fetch unsigned ChangeTrust trustline XDR from NestJS
         const trustRes = await fetch(
-          `http://localhost:3001/api/tickets/prepare-trustline?ticketTypeId=${selectedTicket.id}&publicKey=${connectedPublicKey}`
+          `${API_BASE_URL}/api/tickets/prepare-trustline?ticketTypeId=${selectedTicket.id}&publicKey=${connectedPublicKey}`
         );
         if (!trustRes.ok) {
           const errData = await trustRes.json();
@@ -201,7 +202,7 @@ function CheckoutContent() {
         stellarPublicKey: isNonCustodial ? connectedPublicKey : undefined,
       };
 
-      const response = await fetch("http://localhost:3001/api/tickets/buy", {
+      const response = await fetch(`${API_BASE_URL}/api/tickets/buy`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),

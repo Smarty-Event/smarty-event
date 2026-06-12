@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 
 import { Event, FALLBACK_EVENTS } from "./fallbackData";
+import { API_BASE_URL } from "./config";
 
 export default function Home() {
   const [events, setEvents] = useState<Event[]>([]);
@@ -14,7 +15,7 @@ export default function Home() {
   const itemsPerPage = 6;
 
   useEffect(() => {
-    fetch("http://localhost:3001/api/events")
+    fetch(`${API_BASE_URL}/api/events`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data) && data.length > 0) {

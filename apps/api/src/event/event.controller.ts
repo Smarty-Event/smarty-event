@@ -36,7 +36,8 @@ export class EventController {
     if (!file) {
       throw new BadRequestException("No file uploaded");
     }
-    const imageUrl = `http://localhost:3001/uploads/${file.filename}`;
+    const apiBaseUrl = process.env.NEXT_PUBLIC_API_URL || "https://localhost:3001";
+    const imageUrl = `${apiBaseUrl}/uploads/${file.filename}`;
     return { url: imageUrl };
   }
 

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { API_BASE_URL } from "../../config";
 
 interface Ticket {
   id: string;
@@ -102,7 +103,7 @@ export default function AttendeeWallet() {
     setLoading(true);
     setSearched(true);
 
-    fetch(`http://localhost:3001/api/tickets/wallet/${pubKey}`)
+    fetch(`${API_BASE_URL}/api/tickets/wallet/${pubKey}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {
@@ -142,7 +143,7 @@ export default function AttendeeWallet() {
           return;
         }
 
-        fetch(`http://localhost:3001/api/tickets/${tkt.id}/qr-token`)
+        fetch(`${API_BASE_URL}/api/tickets/${tkt.id}/qr-token`)
           .then((res) => res.json())
           .then((updatedTicket) => {
             if (updatedTicket && updatedTicket.qrToken) {
@@ -165,7 +166,7 @@ export default function AttendeeWallet() {
     setLoading(true);
     setSearched(true);
 
-    fetch(`http://localhost:3001/api/tickets/attendee/${encodeURIComponent(email)}`)
+    fetch(`${API_BASE_URL}/api/tickets/attendee/${encodeURIComponent(email)}`)
       .then((res) => res.json())
       .then((data) => {
         if (Array.isArray(data)) {

@@ -5,6 +5,7 @@ import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 
 import { EventDetail, FALLBACK_EVENTS_DETAIL } from "../../fallbackData";
+import { API_BASE_URL } from "../../config";
 
 export default function EventPage() {
   const params = useParams();
@@ -14,7 +15,7 @@ export default function EventPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    fetch(`http://localhost:3001/api/events/${id}`)
+    fetch(`${API_BASE_URL}/api/events/${id}`)
       .then((res) => res.json())
       .then((data) => {
         if (data && data.title) {
