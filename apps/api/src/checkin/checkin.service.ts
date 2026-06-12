@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
-import { verifyTicketOwnership } from "../../../../packages/stellar/src";
+import { verifyTicketOwnership } from "@repo/stellar";
 import * as crypto from "crypto";
 
 @Injectable()

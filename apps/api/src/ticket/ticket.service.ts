@@ -2,7 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
 import { EventService } from "../event/event.service";
-import { mintTicket } from "../../../../packages/stellar/src";
+import { mintTicket } from "@repo/stellar";
 import * as crypto from "crypto";
 import { Keypair } from "stellar-sdk";
 

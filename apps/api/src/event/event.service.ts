@@ -1,7 +1,7 @@
 import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
-import { createTicketAsset } from "../../../../packages/stellar/src";
+import { createTicketAsset } from "@repo/stellar";
 
 @Injectable()
 export class EventService {
