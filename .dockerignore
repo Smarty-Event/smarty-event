@@ -1,0 +1,10 @@
+**/node_modules
+**/.next
+**/dist
+**/.turbo
+.git
+.gitignore
+*.md
+manage.sh
+docker-compose.yml
+postgres_data

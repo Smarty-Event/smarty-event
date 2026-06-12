@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  database:
+    image: postgres:15-alpine
+    container_name: smarty-db
+    restart: always
+    environment:
+      POSTGRES_USER: shield
+      POSTGRES_PASSWORD: shield
+      POSTGRES_DB: smarty_events
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U shield -d smarty_events"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build:
+      context: .
+      dockerfile: apps/api/Dockerfile
+    container_name: smarty-api
+    restart: always
+    ports:
+      - "3001:3001"
+    environment:
+      DATABASE_URL: "postgresql://shield:shield@database:5432/smarty_events?schema=public"
+      PORT: 3001
+      JWT_SECRET: "smarty-events-super-secret-jwt-key"
+      HMAC_SECRET: "smarty-events-super-secret-hmac-key-for-dynamic-qr-tokens"
+    depends_on:
+      database:
+        condition: service_healthy
+
+  web:
+    build:
+      context: .
+      dockerfile: apps/web/Dockerfile
+    container_name: smarty-web
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      PORT: 3000
+    depends_on:
+      - api
+
+  studio:
+    build:
+      context: .
+      dockerfile: packages/database/Dockerfile
+    container_name: smarty-studio
+    restart: always
+    ports:
+      - "5555:5555"
+    environment:
+      DATABASE_URL: "postgresql://shield:shield@database:5432/smarty_events?schema=public"
+    depends_on:
+      database:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
