@@ -59,13 +59,13 @@ function CheckoutContent() {
         } else {
           setEvent(fallbackEvent);
           const tkt = fallbackEvent.ticketTypes.find((t) => t.id === ticketTypeId);
-          setSelectedTicket(tkt || fallbackEvent.ticketTypes[0]);
+          setSelectedTicket((tkt || fallbackEvent.ticketTypes[0]) as TicketType);
         }
       })
       .catch(() => {
         setEvent(fallbackEvent);
         const tkt = fallbackEvent.ticketTypes.find((t) => t.id === ticketTypeId);
-        setSelectedTicket(tkt || fallbackEvent.ticketTypes[0]);
+        setSelectedTicket((tkt || fallbackEvent.ticketTypes[0]) as TicketType);
       })
       .finally(() => setLoading(false));
   }, [eventId, ticketTypeId]);
