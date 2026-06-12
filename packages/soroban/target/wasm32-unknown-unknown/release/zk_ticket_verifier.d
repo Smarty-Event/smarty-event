@@ -1,0 +1,1 @@
+/Users/ettaraphael/Documents/systems/smarty-events/packages/soroban/target/wasm32-unknown-unknown/release/zk_ticket_verifier.wasm: /Users/ettaraphael/Documents/systems/smarty-events/packages/soroban/src/lib.rs
