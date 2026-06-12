@@ -222,3 +222,31 @@ export async function transferTicket(params: {
     txHash: result.hash,
   };
 }
+
+export async function prepareTrustlineTx(params: {
+  publicKey: string;
+  assetCode: string;
+  issuerPublicKey: string;
+}): Promise<string> {
+  // Ensure account is funded on testnet
+  await ensureAccountActive(params.publicKey);
+
+  // Load account sequence
+  const destAccount = await server.loadAccount(params.publicKey);
+  const asset = new Asset(params.assetCode, params.issuerPublicKey);
+
+  // Build Transaction
+  const tx = new TransactionBuilder(destAccount, {
+    fee: "100",
+    networkPassphrase: Networks.TESTNET,
+  })
+    .addOperation(
+      Operation.changeTrust({
+        asset: asset,
+      })
+    )
+    .setTimeout(180)
+    .build();
+
+  return tx.toXDR();
+}
