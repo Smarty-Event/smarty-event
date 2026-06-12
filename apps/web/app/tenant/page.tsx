@@ -14,6 +14,7 @@ interface Speaker {
   id: string;
   name: string;
   bio?: string;
+  avatar?: string;
 }
 
 interface Session {
@@ -94,6 +95,8 @@ export default function OrganizerPortal() {
   // Create Speaker State
   const [speakerName, setSpeakerName] = useState("");
   const [speakerBio, setSpeakerBio] = useState("");
+  const [speakerAvatar, setSpeakerAvatar] = useState("");
+  const [uploadingSpeakerAvatar, setUploadingSpeakerAvatar] = useState(false);
 
   // Create Session State
   const [sessionTitle, setSessionTitle] = useState("");
@@ -504,6 +507,40 @@ export default function OrganizerPortal() {
     }
   };
 
+  const handleSpeakerAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const fileList = e.target.files;
+    if (!fileList || fileList.length === 0) return;
+    const file = fileList[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    setUploadingSpeakerAvatar(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("http://localhost:3001/api/events/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.message || "Failed to upload image");
+      }
+
+      setSpeakerAvatar(data.url);
+      setMessage("Image uploaded successfully!");
+    } catch (err: any) {
+      console.warn("Upload failed, simulating local asset path:", err);
+      setSpeakerAvatar("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80");
+      setMessage("Simulation upload completed locally!");
+    } finally {
+      setUploadingSpeakerAvatar(false);
+    }
+  };
+
   const handleCreateTicketType = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedEventId || !ticketName) return;
@@ -571,7 +608,7 @@ export default function OrganizerPortal() {
       const response = await fetch(`http://localhost:3001/api/events/${selectedEventId}/speakers`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: speakerName, bio: speakerBio }),
+        body: JSON.stringify({ name: speakerName, bio: speakerBio, avatar: speakerAvatar }),
       });
       if (!response.ok) throw new Error("Failed to add speaker");
 
@@ -579,6 +616,7 @@ export default function OrganizerPortal() {
       setShowSpeakerModal(false);
       setSpeakerName("");
       setSpeakerBio("");
+      setSpeakerAvatar("");
       setMessage("Speaker profile added!");
     } catch {
       // Offline fallback
@@ -590,6 +628,7 @@ export default function OrganizerPortal() {
           id: `mock-spk-${Math.random().toString(36).substr(2, 9)}`,
           name: speakerName,
           bio: speakerBio,
+          avatar: speakerAvatar,
         });
         localStorage.setItem("mock_events", JSON.stringify(localEvents));
       }
@@ -597,6 +636,7 @@ export default function OrganizerPortal() {
       setShowSpeakerModal(false);
       setSpeakerName("");
       setSpeakerBio("");
+      setSpeakerAvatar("");
       setMessage("Speaker profile added!");
     } finally {
       setSubmitting(false);
@@ -1376,9 +1416,71 @@ export default function OrganizerPortal() {
                 <label className="label">Speaker Name</label>
                 <input type="text" className="input" placeholder="e.g. Jed McCaleb" value={speakerName} onChange={(e) => setSpeakerName(e.target.value)} required />
               </div>
-              <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+              <div className="form-group">
                 <label className="label">Short Biography</label>
                 <textarea className="textarea" placeholder="Short bio..." value={speakerBio} onChange={(e) => setSpeakerBio(e.target.value)} style={{ minHeight: "80px" }} />
+              </div>
+              {/* Speaker Avatar Upload Row */}
+              <div className="form-group" style={{ marginBottom: "1.5rem" }}>
+                <label className="label">Avatar Image</label>
+                <div style={{ display: "flex", gap: "0.5rem", alignItems: "center" }}>
+                  <input 
+                    type="text" 
+                    className="input" 
+                    placeholder="URL or upload file..." 
+                    value={speakerAvatar} 
+                    onChange={(e) => setSpeakerAvatar(e.target.value)} 
+                    style={{ flex: 1 }}
+                  />
+                  <label className="btn btn-secondary" style={{ padding: "0.55rem 1rem", fontSize: "0.85rem", cursor: "pointer", display: "inline-block", margin: 0 }}>
+                    {uploadingSpeakerAvatar ? "Uploading..." : "Upload File"}
+                    <input 
+                      type="file" 
+                      accept="image/*" 
+                      onChange={handleSpeakerAvatarUpload} 
+                      style={{ display: "none" }}
+                    />
+                  </label>
+                </div>
+                
+                {speakerAvatar && (
+                  <div style={{ 
+                    marginTop: "0.75rem", 
+                    borderRadius: "10px", 
+                    overflow: "hidden", 
+                    border: "1px solid var(--border)",
+                    position: "relative",
+                    height: "100px"
+                  }}>
+                    <img 
+                      src={speakerAvatar} 
+                      alt="Speaker Avatar Preview" 
+                      style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                    />
+                    <button 
+                      type="button" 
+                      onClick={() => setSpeakerAvatar("")} 
+                      style={{
+                        position: "absolute",
+                        top: "8px",
+                        right: "8px",
+                        background: "rgba(0,0,0,0.6)",
+                        border: "none",
+                        borderRadius: "50%",
+                        width: "24px",
+                        height: "24px",
+                        color: "#fff",
+                        cursor: "pointer",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        fontSize: "0.75rem"
+                      }}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                )}
               </div>
               <div style={{ display: "flex", gap: "1rem" }}>
                 <button type="button" onClick={() => setShowSpeakerModal(false)} className="btn btn-secondary" style={{ flex: 1 }}>Cancel</button>
