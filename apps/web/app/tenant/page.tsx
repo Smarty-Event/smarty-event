@@ -491,15 +491,15 @@ export default function OrganizerPortal() {
           <button onClick={() => setShowEventModal(true)} className="btn btn-primary" style={{ padding: "0.6rem 1.25rem", fontSize: "0.9rem" }}>
             Publish New Event
           </button>
-          {events.length > 0 && (
+          {events.length > 0 && events[0] && (
             <>
-              <button onClick={() => { setSelectedEventId(events[0].id); setShowTicketModal(true); }} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem", fontSize: "0.9rem" }}>
+              <button onClick={() => { setSelectedEventId(events[0]!.id); setShowTicketModal(true); }} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem", fontSize: "0.9rem" }}>
                 Deploy Ticket Tier
               </button>
-              <button onClick={() => { setSelectedEventId(events[0].id); setShowSpeakerModal(true); }} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem", fontSize: "0.9rem" }}>
+              <button onClick={() => { setSelectedEventId(events[0]!.id); setShowSpeakerModal(true); }} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem", fontSize: "0.9rem" }}>
                 Add Speaker Bio
               </button>
-              <button onClick={() => { setSelectedEventId(events[0].id); setShowSessionModal(true); }} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem", fontSize: "0.9rem" }}>
+              <button onClick={() => { setSelectedEventId(events[0]!.id); setShowSessionModal(true); }} className="btn btn-secondary" style={{ padding: "0.6rem 1.25rem", fontSize: "0.9rem" }}>
                 Schedule Session
               </button>
             </>
