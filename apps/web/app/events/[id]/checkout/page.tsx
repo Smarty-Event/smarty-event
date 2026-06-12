@@ -57,15 +57,29 @@ function CheckoutContent() {
           throw new Error("Freighter browser extension is not installed or detected. Please install Freighter or use Albedo.");
         }
         let publicKey = "";
-        if (typeof freighter.getPublicKey === "function") {
-          const res = await freighter.getPublicKey();
-          publicKey = typeof res === "object" && res ? res.publicKey || res.address : res;
-        } else if (typeof freighter.getAddress === "function") {
-          const res = await freighter.getAddress();
-          publicKey = typeof res === "object" && res ? res.address || res.publicKey : res;
-        } else if (typeof freighter.requestAccess === "function") {
-          const res = await freighter.requestAccess();
-          publicKey = typeof res === "object" && res ? res.address || res.publicKey : res;
+        if (typeof freighter.requestAccess === "function") {
+          try {
+            const res = await freighter.requestAccess();
+            if (res) {
+              publicKey = typeof res === "object" ? res.address || res.publicKey : res;
+            }
+          } catch (e) {
+            console.warn("requestAccess failed, trying fallback", e);
+          }
+        }
+
+        if (!publicKey) {
+          if (typeof freighter.getPublicKey === "function") {
+            const res = await freighter.getPublicKey();
+            if (res) {
+              publicKey = typeof res === "object" ? res.publicKey || res.address : res;
+            }
+          } else if (typeof freighter.getAddress === "function") {
+            const res = await freighter.getAddress();
+            if (res) {
+              publicKey = typeof res === "object" ? res.address || res.publicKey : res;
+            }
+          }
         }
 
         if (publicKey) {
