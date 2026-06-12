@@ -125,9 +125,27 @@ export default function Navbar() {
           {/* User Section / Auth buttons */}
           {user ? (
             <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
-              <span style={{ fontSize: "0.85rem", color: "var(--text-muted)" }}>
-                Logged in: <strong style={{ color: "#ffffff" }}>{user.tenantName}</strong>
-              </span>
+              <div 
+                title={`Logged in as ${user.tenantName} (${user.email})`}
+                className="gradient-bg" 
+                style={{
+                  width: "36px",
+                  height: "36px",
+                  borderRadius: "50%",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  fontWeight: "700",
+                  fontSize: "0.95rem",
+                  color: "#ffffff",
+                  boxShadow: "0 0 10px rgba(99, 102, 241, 0.3)",
+                  border: "2px solid var(--border)",
+                  cursor: "pointer",
+                  transition: "transform 0.2s ease"
+                }}
+              >
+                {user.tenantName ? user.tenantName.charAt(0).toUpperCase() : (user.email ? user.email.charAt(0).toUpperCase() : "U")}
+              </div>
               <button onClick={handleLogout} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem", borderRadius: "8px" }}>
                 Logout
               </button>
