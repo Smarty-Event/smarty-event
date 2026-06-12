@@ -62,6 +62,8 @@ export default function OrganizerPortal() {
   const [showTicketModal, setShowTicketModal] = useState(false);
   const [showSpeakerModal, setShowSpeakerModal] = useState(false);
   const [showSessionModal, setShowSessionModal] = useState(false);
+  const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
+  const [deletingEventId, setDeletingEventId] = useState<string | null>(null);
 
   // Create Tenant State
   const [newTenantName, setNewTenantName] = useState("");
@@ -130,7 +132,7 @@ export default function OrganizerPortal() {
   }, [activeTenant]);
 
   useEffect(() => {
-    const isAnyModalOpen = showTenantModal || showEventModal || showEditEventModal || showTicketModal || showSpeakerModal || showSessionModal;
+    const isAnyModalOpen = showTenantModal || showEventModal || showEditEventModal || showTicketModal || showSpeakerModal || showSessionModal || showDeleteConfirmModal;
     if (isAnyModalOpen) {
       document.body.style.overflow = "hidden";
     } else {
@@ -139,7 +141,7 @@ export default function OrganizerPortal() {
     return () => {
       document.body.style.overflow = "";
     };
-  }, [showTenantModal, showEventModal, showEditEventModal, showTicketModal, showSpeakerModal, showSessionModal]);
+  }, [showTenantModal, showEventModal, showEditEventModal, showTicketModal, showSpeakerModal, showSessionModal, showDeleteConfirmModal]);
 
   const loadTenants = () => {
     fetch("http://localhost:3001/api/tenants")
@@ -408,8 +410,15 @@ export default function OrganizerPortal() {
     }
   };
 
-  const handleDeleteEvent = async (eventId: string) => {
-    if (!confirm("Are you sure you want to delete this event? This will also remove all associated tickets and check-in records.")) return;
+  const triggerDeleteConfirmModal = (eventId: string) => {
+    setDeletingEventId(eventId);
+    setShowDeleteConfirmModal(true);
+  };
+
+  const handleDeleteEvent = async () => {
+    if (!deletingEventId) return;
+    const eventId = deletingEventId;
+    setShowDeleteConfirmModal(false);
     setLoading(true);
     setMessage("");
 
@@ -434,6 +443,7 @@ export default function OrganizerPortal() {
       setMessage("Simulation Event deleted locally!");
     } finally {
       setLoading(false);
+      setDeletingEventId(null);
     }
   };
 
@@ -882,7 +892,7 @@ export default function OrganizerPortal() {
                             <button onClick={() => triggerEditEventModal(evt)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderRadius: "8px", background: "rgba(99, 102, 241, 0.15)", border: "1px solid rgba(99, 102, 241, 0.3)", color: "var(--primary)" }}>
                               Edit
                             </button>
-                            <button onClick={() => handleDeleteEvent(evt.id)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#ef4444" }}>
+                            <button onClick={() => triggerDeleteConfirmModal(evt.id)} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", fontSize: "0.8rem", borderRadius: "8px", background: "rgba(239, 68, 68, 0.15)", border: "1px solid rgba(239, 68, 68, 0.3)", color: "#ef4444" }}>
                               Delete
                             </button>
                           </div>
@@ -1524,6 +1534,49 @@ export default function OrganizerPortal() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>,
+        document.body
+      )}
+
+      {/* Modal 6: Delete Event Confirmation */}
+      {mounted && showDeleteConfirmModal && createPortal(
+        <div style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, background: "rgba(0,0,0,0.85)", zIndex: 1000, display: "flex", justifyContent: "center", alignItems: "center", backdropFilter: "blur(8px)" }}>
+          <div className="card animate-fade-in" style={{ maxWidth: "450px", width: "90%", padding: "2.5rem", display: "flex", flexDirection: "column", gap: "1.5rem" }}>
+            <div style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+              <div style={{ background: "rgba(239, 68, 68, 0.15)", color: "#ef4444", width: "48px", height: "48px", borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z" />
+                  <line x1="12" y1="9" x2="12" y2="13" />
+                  <line x1="12" y1="17" x2="12.01" y2="17" />
+                </svg>
+              </div>
+              <h3 style={{ fontSize: "1.3rem", fontWeight: "700" }}>Delete Event</h3>
+            </div>
+            
+            <p style={{ color: "var(--text-muted)", fontSize: "0.95rem", lineHeight: "1.5" }}>
+              Are you sure you want to delete this event? This will also remove all associated tickets and check-in records. This action cannot be undone.
+            </p>
+
+            <div style={{ display: "flex", gap: "1rem", justifyContent: "flex-end", marginTop: "0.5rem" }}>
+              <button 
+                onClick={() => {
+                  setShowDeleteConfirmModal(false);
+                  setDeletingEventId(null);
+                }} 
+                className="btn btn-secondary" 
+                style={{ padding: "0.6rem 1.2rem", fontSize: "0.9rem" }}
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleDeleteEvent} 
+                className="btn" 
+                style={{ background: "#ef4444", color: "#ffffff", padding: "0.6rem 1.2rem", fontSize: "0.9rem", display: "inline-flex", gap: "0.5rem" }}
+              >
+                Confirm Delete
+              </button>
+            </div>
           </div>
         </div>,
         document.body
