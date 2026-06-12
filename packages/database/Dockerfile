@@ -16,6 +16,8 @@ RUN npm ci
 FROM base AS runner
 WORKDIR /app
 
+RUN apk add --no-cache openssl
+
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
