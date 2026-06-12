@@ -57,7 +57,7 @@ export default function EventPage() {
       description: "Join developers, node operators, and blockchain enthusiasts from across the globe to discuss the future of the Stellar network, Smart Contracts (Soroban), and cross-border payment rails. Explore real-world integrations, meet industry leaders, and contribute to standardizing payment structures on the decentralized horizon.",
       startDate: "2026-09-12T09:00:00.000Z",
       endDate: "2026-09-13T17:00:00.000Z",
-      banner: "https://images.unsplash.com/photo-1591115765373-5a9216b045e7?auto=format&fit=crop&w=1200&q=80",
+      banner: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80",
       category: "Technology",
       capacity: 500,
       speakers: [
