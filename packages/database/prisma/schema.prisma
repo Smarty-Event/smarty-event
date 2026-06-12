@@ -180,6 +180,8 @@ model Ticket {
   stellarAssetCode String?      // Asset code representing the ticket on Stellar network (e.g., EVT26VIP)
   stellarTxHash    String?      // Tx hash of minting/transfer
   qrToken          String?      // HMAC-SHA256 signature token for offline/secure verification
+  zkCommitment     String?      // Public commitment hash of the private secret
+  zkNullifierHash  String?      @unique // Public nullifier hash to prevent double-spending
   status           TicketStatus @default(CREATED)
   issuedAt         DateTime?
   createdAt        DateTime     @default(now())
