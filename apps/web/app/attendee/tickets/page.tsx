@@ -29,6 +29,51 @@ export default function AttendeeWallet() {
   const [loading, setLoading] = useState(false);
   const [searched, setSearched] = useState(false);
 
+  // Hybrid wallet states
+  const [lookupMethod, setLookupMethod] = useState<"email" | "wallet">("email");
+  const [connectedPublicKey, setConnectedPublicKey] = useState("");
+  const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+
+  const connectFreighter = async () => {
+    if (typeof window === "undefined" || !(window as any).freighterApi) {
+      alert("Freighter extension is not installed. Please install Freighter to connect your wallet.");
+      return;
+    }
+    setIsConnectingWallet(true);
+    try {
+      const { publicKey } = await (window as any).freighterApi.getPublicKey();
+      if (publicKey) {
+        setConnectedPublicKey(publicKey);
+        fetchTicketsByWallet(publicKey);
+      }
+    } catch (err: any) {
+      console.error("Failed to connect Freighter", err);
+      alert(err.message || "Failed to connect wallet.");
+    } finally {
+      setIsConnectingWallet(false);
+    }
+  };
+
+  const fetchTicketsByWallet = (pubKey: string) => {
+    setLoading(true);
+    setSearched(true);
+
+    fetch(`http://localhost:3001/api/tickets/wallet/${pubKey}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setTickets(data);
+        } else {
+          setTickets([]);
+        }
+      })
+      .catch((err) => {
+        console.error("Failed to fetch tickets by wallet", err);
+        setTickets([]);
+      })
+      .finally(() => setLoading(false));
+  };
+
   // Poll intervals to refresh QR tokens
   useEffect(() => {
     if (tickets.length === 0) return;
@@ -126,21 +171,106 @@ export default function AttendeeWallet() {
         Access your tickets, view dynamic check-in QR codes, and trace your assets on the Stellar network.
       </p>
 
-      {/* Lookup Form */}
-      <form onSubmit={handleSearch} className="glass" style={{ padding: "1.5rem", borderRadius: "16px", display: "flex", gap: "1rem", marginBottom: "3rem" }}>
-        <input
-          type="email"
-          className="input"
-          placeholder="Enter the email address used during purchase"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          required
-          style={{ flexGrow: 1 }}
-        />
-        <button type="submit" className="btn btn-primary">
-          Access Tickets
+      {/* Lookup Method Switcher */}
+      <div className="glass" style={{ display: "inline-flex", gap: "0.25rem", padding: "0.25rem", borderRadius: "10px", marginBottom: "1.5rem" }}>
+        <button
+          onClick={() => {
+            setLookupMethod("email");
+            setTickets([]);
+            setSearched(false);
+          }}
+          style={{
+            padding: "0.5rem 1rem",
+            borderRadius: "8px",
+            border: "none",
+            background: lookupMethod === "email" ? "var(--primary)" : "transparent",
+            color: lookupMethod === "email" ? "#ffffff" : "var(--text-muted)",
+            fontWeight: "500",
+            cursor: "pointer",
+            fontSize: "0.9rem",
+            transition: "all 0.2s ease"
+          }}
+        >
+          📧 Lookup by Email
         </button>
-      </form>
+        <button
+          onClick={() => {
+            setLookupMethod("wallet");
+            setTickets([]);
+            setSearched(false);
+            if (connectedPublicKey) {
+              fetchTicketsByWallet(connectedPublicKey);
+            }
+          }}
+          style={{
+            padding: "0.5rem 1rem",
+            borderRadius: "8px",
+            border: "none",
+            background: lookupMethod === "wallet" ? "var(--primary)" : "transparent",
+            color: lookupMethod === "wallet" ? "#ffffff" : "var(--text-muted)",
+            fontWeight: "500",
+            cursor: "pointer",
+            fontSize: "0.9rem",
+            transition: "all 0.2s ease"
+          }}
+        >
+          🔌 Connect Web3 Wallet
+        </button>
+      </div>
+
+      {/* Lookup Input/Form */}
+      {lookupMethod === "email" ? (
+        <form onSubmit={handleSearch} className="glass" style={{ padding: "1.5rem", borderRadius: "16px", display: "flex", gap: "1rem", marginBottom: "3rem" }}>
+          <input
+            type="email"
+            className="input"
+            placeholder="Enter the email address used during purchase"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+            style={{ flexGrow: 1 }}
+          />
+          <button type="submit" className="btn btn-primary">
+            Access Tickets
+          </button>
+        </form>
+      ) : (
+        <div className="glass" style={{ padding: "1.5rem", borderRadius: "16px", textAlign: "center", marginBottom: "3rem" }}>
+          {connectedPublicKey ? (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+              <div style={{ textAlign: "left" }}>
+                <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>CONNECTED WEB3 WALLET:</span>
+                <span style={{ fontSize: "0.95rem", color: "var(--primary)", fontFamily: "monospace", fontWeight: "600", wordBreak: "break-all" }}>
+                  {connectedPublicKey.substring(0, 16)}...{connectedPublicKey.substring(connectedPublicKey.length - 16)}
+                </span>
+              </div>
+              <div style={{ display: "flex", gap: "1rem" }}>
+                <button type="button" onClick={() => fetchTicketsByWallet(connectedPublicKey)} className="btn btn-primary">
+                  🔄 Refresh Wallet Assets
+                </button>
+                <button type="button" onClick={connectFreighter} className="btn btn-secondary">
+                  Use Different Wallet
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div style={{ padding: "1.5rem 0" }}>
+              <p style={{ color: "var(--text-muted)", marginBottom: "1.25rem", fontSize: "0.95rem" }}>
+                Connect your Freighter browser wallet to read your tickets directly from the on-chain registry.
+              </p>
+              <button 
+                type="button" 
+                onClick={connectFreighter} 
+                disabled={isConnectingWallet}
+                className="btn btn-primary"
+                style={{ padding: "0.75rem 2rem", fontSize: "0.95rem" }}
+              >
+                {isConnectingWallet ? "Connecting to Freighter..." : "🔌 Connect Freighter Wallet"}
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       {loading ? (
         <div style={{ textAlign: "center", padding: "3rem", color: "var(--text-muted)" }}>
