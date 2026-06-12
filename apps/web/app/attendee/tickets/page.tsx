@@ -281,32 +281,47 @@ export default function AttendeeWallet() {
       ) : (
         <div className="glass" style={{ padding: "1.5rem", borderRadius: "16px", marginBottom: "3rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
           <div>
-            <label className="label" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.5rem", display: "block", textAlign: "left" }}>SELECT WALLET PROVIDER</label>
-            <div style={{ display: "flex", gap: "1.5rem" }}>
-              <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", fontSize: "0.9rem" }}>
-                <input 
-                  type="radio" 
-                  name="walletProvider" 
-                  checked={walletProvider === "albedo"} 
-                  onChange={() => {
-                    setWalletProvider("albedo");
-                    setConnectedPublicKey("");
-                  }} 
-                />
-                Albedo (No Extension Required)
-              </label>
-              <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", fontSize: "0.9rem" }}>
-                <input 
-                  type="radio" 
-                  name="walletProvider" 
-                  checked={walletProvider === "freighter"} 
-                  onChange={() => {
-                    setWalletProvider("freighter");
-                    setConnectedPublicKey("");
-                  }} 
-                />
-                Freighter Extension
-              </label>
+            <label className="label" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.75rem", display: "block", textAlign: "left" }}>SELECT WALLET PROVIDER</label>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+              <div 
+                onClick={() => {
+                  setWalletProvider("albedo");
+                  setConnectedPublicKey("");
+                }}
+                style={{
+                  border: walletProvider === "albedo" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                  background: walletProvider === "albedo" ? "rgba(99, 102, 241, 0.08)" : "transparent",
+                  padding: "0.75rem 0.5rem",
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "all 0.22s ease",
+                  boxShadow: walletProvider === "albedo" ? "0 4px 12px rgba(99, 102, 241, 0.1)" : "none"
+                }}
+              >
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Albedo Wallet</span>
+                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>No Extension Required</span>
+              </div>
+
+              <div 
+                onClick={() => {
+                  setWalletProvider("freighter");
+                  setConnectedPublicKey("");
+                }}
+                style={{
+                  border: walletProvider === "freighter" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                  background: walletProvider === "freighter" ? "rgba(99, 102, 241, 0.08)" : "transparent",
+                  padding: "0.75rem 0.5rem",
+                  borderRadius: "10px",
+                  cursor: "pointer",
+                  textAlign: "center",
+                  transition: "all 0.22s ease",
+                  boxShadow: walletProvider === "freighter" ? "0 4px 12px rgba(99, 102, 241, 0.1)" : "none"
+                }}
+              >
+                <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Freighter Wallet</span>
+                <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>Browser Extension</span>
+              </div>
             </div>
           </div>
 

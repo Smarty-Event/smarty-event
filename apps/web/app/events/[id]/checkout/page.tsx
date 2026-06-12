@@ -438,56 +438,88 @@ function CheckoutContent() {
                 gap: "1rem"
               }}>
                 <label className="label" style={{ fontSize: "0.8rem", textTransform: "uppercase", letterSpacing: "0.05em" }}>Wallet Configuration Selection</label>
-                <div style={{ display: "flex", gap: "1.5rem" }}>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem" }}>
-                    <input 
-                      type="radio" 
-                      name="walletType" 
-                      checked={walletType === "custodial"} 
-                      onChange={() => setWalletType("custodial")} 
-                    />
-                    Custodial (Automated Setup)
-                  </label>
-                  <label style={{ display: "flex", alignItems: "center", gap: "0.5rem", cursor: "pointer", fontSize: "0.9rem" }}>
-                    <input 
-                      type="radio" 
-                      name="walletType" 
-                      checked={walletType === "non-custodial"} 
-                      onChange={() => setWalletType("non-custodial")} 
-                    />
-                    Connected Wallet (Web3 Extension)
-                  </label>
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "1rem" }}>
+                  <div 
+                    onClick={() => setWalletType("custodial")}
+                    style={{
+                      border: walletType === "custodial" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                      background: walletType === "custodial" ? "rgba(99, 102, 241, 0.08)" : "transparent",
+                      padding: "1rem 0.75rem",
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      transition: "all 0.22s ease",
+                      boxShadow: walletType === "custodial" ? "0 4px 12px rgba(99, 102, 241, 0.15)" : "none"
+                    }}
+                  >
+                    <div style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>🛡️</div>
+                    <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Custodial Wallet</span>
+                    <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>Automated Setup (No Wallet Needed)</span>
+                  </div>
+
+                  <div 
+                    onClick={() => setWalletType("non-custodial")}
+                    style={{
+                      border: walletType === "non-custodial" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                      background: walletType === "non-custodial" ? "rgba(99, 102, 241, 0.08)" : "transparent",
+                      padding: "1rem 0.75rem",
+                      borderRadius: "12px",
+                      cursor: "pointer",
+                      textAlign: "center",
+                      transition: "all 0.22s ease",
+                      boxShadow: walletType === "non-custodial" ? "0 4px 12px rgba(99, 102, 241, 0.15)" : "none"
+                    }}
+                  >
+                    <div style={{ fontSize: "1.25rem", marginBottom: "0.25rem" }}>🔌</div>
+                    <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Connected Wallet</span>
+                    <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>Browser Extension / Popup</span>
+                  </div>
                 </div>
 
                 {walletType === "non-custodial" && (
                   <div style={{ marginTop: "0.5rem", borderTop: "1px solid var(--border)", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
                     <div>
                       <label className="label" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.5rem", display: "block" }}>SELECT WALLET PROVIDER</label>
-                      <div style={{ display: "flex", gap: "1.5rem" }}>
-                        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", fontSize: "0.9rem" }}>
-                          <input 
-                            type="radio" 
-                            name="walletProvider" 
-                            checked={walletProvider === "albedo"} 
-                            onChange={() => {
-                              setWalletProvider("albedo");
-                              setConnectedPublicKey("");
-                            }} 
-                          />
-                          Albedo (No Extension Required)
-                        </label>
-                        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", fontSize: "0.9rem" }}>
-                          <input 
-                            type="radio" 
-                            name="walletProvider" 
-                            checked={walletProvider === "freighter"} 
-                            onChange={() => {
-                              setWalletProvider("freighter");
-                              setConnectedPublicKey("");
-                            }} 
-                          />
-                          Freighter Extension
-                        </label>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.75rem" }}>
+                        <div 
+                          onClick={() => {
+                            setWalletProvider("albedo");
+                            setConnectedPublicKey("");
+                          }}
+                          style={{
+                            border: walletProvider === "albedo" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                            background: walletProvider === "albedo" ? "rgba(99, 102, 241, 0.08)" : "transparent",
+                            padding: "0.75rem 0.5rem",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                            textAlign: "center",
+                            transition: "all 0.22s ease",
+                            boxShadow: walletProvider === "albedo" ? "0 4px 12px rgba(99, 102, 241, 0.1)" : "none"
+                          }}
+                        >
+                          <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Albedo Wallet</span>
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>No Extension Required</span>
+                        </div>
+
+                        <div 
+                          onClick={() => {
+                            setWalletProvider("freighter");
+                            setConnectedPublicKey("");
+                          }}
+                          style={{
+                            border: walletProvider === "freighter" ? "2px solid var(--primary)" : "1px solid var(--border)",
+                            background: walletProvider === "freighter" ? "rgba(99, 102, 241, 0.08)" : "transparent",
+                            padding: "0.75rem 0.5rem",
+                            borderRadius: "10px",
+                            cursor: "pointer",
+                            textAlign: "center",
+                            transition: "all 0.22s ease",
+                            boxShadow: walletProvider === "freighter" ? "0 4px 12px rgba(99, 102, 241, 0.1)" : "none"
+                          }}
+                        >
+                          <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "#ffffff", display: "block" }}>Freighter Wallet</span>
+                          <span style={{ fontSize: "0.7rem", color: "var(--text-muted)", display: "block", marginTop: "0.15rem" }}>Browser Extension</span>
+                        </div>
                       </div>
                     </div>
 
