@@ -31,23 +31,40 @@ export default function AttendeeWallet() {
 
   // Hybrid wallet states
   const [lookupMethod, setLookupMethod] = useState<"email" | "wallet">("email");
+  const [walletProvider, setWalletProvider] = useState<"albedo" | "freighter">("albedo");
   const [connectedPublicKey, setConnectedPublicKey] = useState("");
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
 
-  const connectFreighter = async () => {
-    if (typeof window === "undefined" || !(window as any).freighterApi) {
-      alert("Freighter extension is not installed. Please install Freighter to connect your wallet.");
-      return;
-    }
+  const connectWallet = async () => {
     setIsConnectingWallet(true);
     try {
-      const { publicKey } = await (window as any).freighterApi.getPublicKey();
-      if (publicKey) {
-        setConnectedPublicKey(publicKey);
-        fetchTicketsByWallet(publicKey);
+      if (walletProvider === "albedo") {
+        const albedo = (window as any).albedo;
+        if (!albedo) {
+          throw new Error("Albedo helper library is not loaded. Please try reloading the page.");
+        }
+        const res = await albedo.publicKey();
+        if (res && res.pubkey) {
+          setConnectedPublicKey(res.pubkey);
+          fetchTicketsByWallet(res.pubkey);
+        }
+      } else {
+        const freighter = (window as any).freighterApi;
+        if (!freighter) {
+          throw new Error("Freighter helper library is not loaded.");
+        }
+        const isInstalled = await freighter.isConnected();
+        if (!isInstalled || !isInstalled.isConnected) {
+          throw new Error("Freighter browser extension is not installed or detected. Please install Freighter or use Albedo.");
+        }
+        const { publicKey } = await freighter.getPublicKey();
+        if (publicKey) {
+          setConnectedPublicKey(publicKey);
+          fetchTicketsByWallet(publicKey);
+        }
       }
     } catch (err: any) {
-      console.error("Failed to connect Freighter", err);
+      console.error("Failed to connect wallet", err);
       alert(err.message || "Failed to connect wallet.");
     } finally {
       setIsConnectingWallet(false);
@@ -235,11 +252,41 @@ export default function AttendeeWallet() {
           </button>
         </form>
       ) : (
-        <div className="glass" style={{ padding: "1.5rem", borderRadius: "16px", textAlign: "center", marginBottom: "3rem" }}>
+        <div className="glass" style={{ padding: "1.5rem", borderRadius: "16px", marginBottom: "3rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+          <div>
+            <label className="label" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.5rem", display: "block", textAlign: "left" }}>SELECT WALLET PROVIDER</label>
+            <div style={{ display: "flex", gap: "1.5rem" }}>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", fontSize: "0.9rem" }}>
+                <input 
+                  type="radio" 
+                  name="walletProvider" 
+                  checked={walletProvider === "albedo"} 
+                  onChange={() => {
+                    setWalletProvider("albedo");
+                    setConnectedPublicKey("");
+                  }} 
+                />
+                Albedo (No Extension Required)
+              </label>
+              <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", fontSize: "0.9rem" }}>
+                <input 
+                  type="radio" 
+                  name="walletProvider" 
+                  checked={walletProvider === "freighter"} 
+                  onChange={() => {
+                    setWalletProvider("freighter");
+                    setConnectedPublicKey("");
+                  }} 
+                />
+                Freighter Extension
+              </label>
+            </div>
+          </div>
+
           {connectedPublicKey ? (
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "1rem", flexWrap: "wrap", borderTop: "1px dashed var(--border)", paddingTop: "1rem" }}>
               <div style={{ textAlign: "left" }}>
-                <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>CONNECTED WEB3 WALLET:</span>
+                <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>CONNECTED WEB3 WALLET ({walletProvider.toUpperCase()}):</span>
                 <span style={{ fontSize: "0.95rem", color: "var(--primary)", fontFamily: "monospace", fontWeight: "600", wordBreak: "break-all" }}>
                   {connectedPublicKey.substring(0, 16)}...{connectedPublicKey.substring(connectedPublicKey.length - 16)}
                 </span>
@@ -248,24 +295,24 @@ export default function AttendeeWallet() {
                 <button type="button" onClick={() => fetchTicketsByWallet(connectedPublicKey)} className="btn btn-primary">
                   🔄 Refresh Wallet Assets
                 </button>
-                <button type="button" onClick={connectFreighter} className="btn btn-secondary">
+                <button type="button" onClick={connectWallet} className="btn btn-secondary">
                   Use Different Wallet
                 </button>
               </div>
             </div>
           ) : (
-            <div style={{ padding: "1.5rem 0" }}>
+            <div style={{ padding: "1rem 0", borderTop: "1px dashed var(--border)", paddingTop: "1rem", textAlign: "center" }}>
               <p style={{ color: "var(--text-muted)", marginBottom: "1.25rem", fontSize: "0.95rem" }}>
-                Connect your Freighter browser wallet to read your tickets directly from the on-chain registry.
+                Connect your {walletProvider === "albedo" ? "Albedo" : "Freighter"} wallet to read your tickets directly from the on-chain registry.
               </p>
               <button 
                 type="button" 
-                onClick={connectFreighter} 
+                onClick={connectWallet} 
                 disabled={isConnectingWallet}
                 className="btn btn-primary"
                 style={{ padding: "0.75rem 2rem", fontSize: "0.95rem" }}
               >
-                {isConnectingWallet ? "Connecting to Freighter..." : "🔌 Connect Freighter Wallet"}
+                {isConnectingWallet ? "Connecting..." : `🔌 Connect ${walletProvider === "albedo" ? "Albedo" : "Freighter"} Wallet`}
               </button>
             </div>
           )}

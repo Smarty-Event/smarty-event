@@ -30,23 +30,40 @@ function CheckoutContent() {
 
   // Wallet states
   const [walletType, setWalletType] = useState<"custodial" | "non-custodial">("custodial");
+  const [walletProvider, setWalletProvider] = useState<"albedo" | "freighter">("albedo");
   const [connectedPublicKey, setConnectedPublicKey] = useState("");
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
 
-  const connectFreighter = async () => {
-    if (typeof window === "undefined" || !(window as any).freighterApi) {
-      alert("Freighter extension is not installed. Please install Freighter to connect your wallet.");
-      return;
-    }
+  const connectWallet = async () => {
     setIsConnectingWallet(true);
     try {
-      const { publicKey } = await (window as any).freighterApi.getPublicKey();
-      if (publicKey) {
-        setConnectedPublicKey(publicKey);
-        setWalletType("non-custodial");
+      if (walletProvider === "albedo") {
+        const albedo = (window as any).albedo;
+        if (!albedo) {
+          throw new Error("Albedo helper library is not loaded. Please try reloading the page.");
+        }
+        const res = await albedo.publicKey();
+        if (res && res.pubkey) {
+          setConnectedPublicKey(res.pubkey);
+          setWalletType("non-custodial");
+        }
+      } else {
+        const freighter = (window as any).freighterApi;
+        if (!freighter) {
+          throw new Error("Freighter helper library is not loaded.");
+        }
+        const isInstalled = await freighter.isConnected();
+        if (!isInstalled || !isInstalled.isConnected) {
+          throw new Error("Freighter browser extension is not installed or detected. Please install Freighter or use Albedo.");
+        }
+        const { publicKey } = await freighter.getPublicKey();
+        if (publicKey) {
+          setConnectedPublicKey(publicKey);
+          setWalletType("non-custodial");
+        }
       }
     } catch (err: any) {
-      console.error("Failed to connect Freighter", err);
+      console.error("Failed to connect wallet", err);
       alert(err.message || "Failed to connect wallet.");
     } finally {
       setIsConnectingWallet(false);
@@ -115,10 +132,27 @@ function CheckoutContent() {
         }
         const { xdr } = await trustRes.json();
 
-        // 2. Sign transaction XDR via Freighter wallet
-        const signedXdr = await (window as any).freighterApi.signTransaction(xdr, {
-          network: "TESTNET",
-        });
+        // 2. Sign transaction XDR via selected wallet
+        let signedXdr = "";
+        if (walletProvider === "albedo") {
+          const albedo = (window as any).albedo;
+          if (!albedo) {
+            throw new Error("Albedo helper library is not loaded.");
+          }
+          const res = await albedo.tx({
+            xdr,
+            network: "testnet",
+          });
+          signedXdr = res.signed_envelope_xdr;
+        } else {
+          const freighter = (window as any).freighterApi;
+          if (!freighter) {
+            throw new Error("Freighter helper library is not loaded.");
+          }
+          signedXdr = await freighter.signTransaction(xdr, {
+            network: "TESTNET",
+          });
+        }
 
         // 3. Submit signed XDR to Horizon Testnet directly
         const horizonRes = await fetch("https://horizon-testnet.stellar.org/transactions", {
@@ -399,18 +433,48 @@ function CheckoutContent() {
                 </div>
 
                 {walletType === "non-custodial" && (
-                  <div style={{ marginTop: "0.5rem", borderTop: "1px solid var(--border)", paddingTop: "1rem" }}>
+                  <div style={{ marginTop: "0.5rem", borderTop: "1px solid var(--border)", paddingTop: "1rem", display: "flex", flexDirection: "column", gap: "1rem" }}>
+                    <div>
+                      <label className="label" style={{ fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.5rem", display: "block" }}>SELECT WALLET PROVIDER</label>
+                      <div style={{ display: "flex", gap: "1.5rem" }}>
+                        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", fontSize: "0.9rem" }}>
+                          <input 
+                            type="radio" 
+                            name="walletProvider" 
+                            checked={walletProvider === "albedo"} 
+                            onChange={() => {
+                              setWalletProvider("albedo");
+                              setConnectedPublicKey("");
+                            }} 
+                          />
+                          Albedo (No Extension Required)
+                        </label>
+                        <label style={{ display: "flex", alignItems: "center", gap: "0.4rem", cursor: "pointer", fontSize: "0.9rem" }}>
+                          <input 
+                            type="radio" 
+                            name="walletProvider" 
+                            checked={walletProvider === "freighter"} 
+                            onChange={() => {
+                              setWalletProvider("freighter");
+                              setConnectedPublicKey("");
+                            }} 
+                          />
+                          Freighter Extension
+                        </label>
+                      </div>
+                    </div>
+
                     {connectedPublicKey ? (
-                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px dashed var(--border)", paddingTop: "1rem" }}>
                         <div>
-                          <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>CONNECTED PUBLIC KEY:</span>
+                          <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-muted)", marginBottom: "0.25rem" }}>CONNECTED PUBLIC KEY ({walletProvider.toUpperCase()}):</span>
                           <span style={{ fontSize: "0.85rem", color: "var(--primary)", fontFamily: "monospace", wordBreak: "break-all" }}>
                             {connectedPublicKey.substring(0, 12)}...{connectedPublicKey.substring(connectedPublicKey.length - 12)}
                           </span>
                         </div>
                         <button 
                           type="button" 
-                          onClick={connectFreighter} 
+                          onClick={connectWallet} 
                           className="btn btn-secondary" 
                           style={{ padding: "0.4rem 0.8rem", fontSize: "0.85rem", borderRadius: "8px" }}
                         >
@@ -420,12 +484,12 @@ function CheckoutContent() {
                     ) : (
                       <button 
                         type="button" 
-                        onClick={connectFreighter} 
+                        onClick={connectWallet} 
                         disabled={isConnectingWallet}
                         className="btn btn-secondary" 
                         style={{ width: "100%", padding: "0.75rem", fontSize: "0.9rem", borderRadius: "10px", background: "rgba(99, 102, 241, 0.15)", border: "1px solid rgba(99, 102, 241, 0.3)", color: "var(--primary)" }}
                       >
-                        {isConnectingWallet ? "Connecting to extension..." : "🔌 Connect Freighter Wallet"}
+                        {isConnectingWallet ? "Connecting to wallet..." : `🔌 Connect ${walletProvider === "albedo" ? "Albedo" : "Freighter"} Wallet`}
                       </button>
                     )}
                   </div>

@@ -28,6 +28,9 @@ export default function RootLayout({
             `,
           }}
         />
+        {/* Stellar Wallets CDN Scripts */}
+        <script src="https://unpkg.com/@albedo-link/intent/lib/albedo.intent.js" defer />
+        <script src="https://cdn.jsdelivr.net/npm/@stellar/freighter-api/build/index.min.js" defer />
       </head>
       <body>
         <Navbar />
