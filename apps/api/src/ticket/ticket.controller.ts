@@ -14,6 +14,7 @@ export class TicketController {
       attendeeEmail: string;
       paymentMethod: string;
       stellarPublicKey?: string;
+      zkCommitment?: string;
     }
   ) {
     return this.ticketService.purchaseTicket(body);

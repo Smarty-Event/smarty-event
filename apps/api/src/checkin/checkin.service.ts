@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
-import { verifyTicketOwnership } from "@repo/stellar";
+import { verifyTicketOwnership, verifyZkTicketOnChain } from "@repo/stellar";
 import * as crypto from "crypto";
 
 @Injectable()
@@ -16,8 +16,87 @@ export class CheckInService {
     scannedById: string;
     deviceId?: string;
   }) {
-    // 1. Decode token (format is "ticketId:attendeeId:timestamp:signature")
+    // Decode token
     const parts = data.qrToken.split(":");
+
+    // Handle zero-knowledge privacy check-ins
+    if (parts[0] === "zk") {
+      if (parts.length !== 4) {
+        throw new BadRequestException("Invalid ZK QR token format");
+      }
+
+      const [, proof, commitment, nullifierHash] = parts;
+      if (!proof || !commitment || !nullifierHash) {
+        throw new BadRequestException("Invalid ZK QR token format");
+      }
+
+      // 1. Fetch ticket by commitment
+      const ticket = await this.prisma.ticket.findFirst({
+        where: { zkCommitment: commitment },
+        include: {
+          attendee: true,
+          ticketType: {
+            include: { event: true },
+          },
+        },
+      });
+
+      if (!ticket) {
+        throw new NotFoundException("No active ticket found matching this ZK commitment");
+      }
+
+      // 2. Double-spend protection
+      if (ticket.status === "CHECKED_IN") {
+        throw new BadRequestException("Double-Spend warning: Ticket has already checked-in");
+      }
+
+      const event = ticket.ticketType.event;
+      const tenantId = event.tenantId;
+
+      // 3. Verify on Stellar Blockchain
+      const tenantKeys = this.tenantService.getTenantKeys(tenantId);
+      const contractId = process.env.ZK_VERIFIER_CONTRACT_ID || "CBATWOA2NBYJUKYF2UULNUWU52XQZBNGDIMK64GIHIEVABI6WYQ45K62";
+
+      const verificationResult = await verifyZkTicketOnChain({
+        contractId,
+        proof,
+        commitment,
+        nullifierHash,
+        distributorSecret: tenantKeys.distributor.secret,
+      });
+
+      if (!verificationResult.success) {
+        throw new BadRequestException(`ZK verification failed: ${verificationResult.error}`);
+      }
+
+      // 4. Perform local check-in record creation
+      const checkIn = await this.prisma.checkIn.create({
+        data: {
+          ticketId: ticket.id,
+          scannedById: data.scannedById,
+          deviceId: data.deviceId || "GATE_SCANNER_ZK",
+        },
+      });
+
+      // 5. Update Ticket status and record nullifier hash
+      await this.prisma.ticket.update({
+        where: { id: ticket.id },
+        data: {
+          status: "CHECKED_IN",
+          zkNullifierHash: nullifierHash,
+        },
+      });
+
+      return {
+        message: "ZK Check-in successful! Access granted (Privacy Protected).",
+        attendeeName: "Anonymous (ZK Verified)",
+        ticketType: ticket.ticketType.name,
+        eventTitle: event.title,
+        scannedAt: checkIn.scannedAt,
+        txHash: verificationResult.txHash,
+      };
+    }
+
     if (parts.length !== 4) {
       throw new BadRequestException("Invalid QR token format");
     }

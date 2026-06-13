@@ -46,6 +46,7 @@ export class TicketService {
     attendeeEmail: string;
     paymentMethod: string;
     stellarPublicKey?: string;
+    zkCommitment?: string;
   }) {
     // 1. Load ticket type and event details
     const ticketType = await this.prisma.ticketType.findUnique({
@@ -134,6 +135,7 @@ export class TicketService {
         stellarTxHash: txHash,
         status: "ACTIVE",
         issuedAt: new Date(),
+        zkCommitment: data.zkCommitment,
       },
     });
 
