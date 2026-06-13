@@ -21,13 +21,15 @@ SmartyEvents is a multi-tenant event ticketing platform powered by the Stellar b
 
 - **Stellar-Backed Tickets**: True ticket ownership represented as custom Stellar assets on the Stellar Testnet.
 - **Secure Ticket Check-In**: Check-in safely at event gates via HMAC-SHA256 signature tokens designed for fast, offline, and fraud-resistant verification.
+- **Zero-Knowledge Check-In Privacy**: Attendees can choose ZK Privacy mode at checkout. Ticket ownership is verified trustlessly on-chain via a Soroban smart contract, keeping personal details and wallet addresses 100% private.
 - **Multi-Method Checkout**: Purchase tickets using Stellar USDC, traditional card networks, or bank transfers.
 
 ### Technical Highlights
 
 - **Turborepo Monorepo**: Extremely fast build pipelines, type sharing, and task caching.
 - **Type-Safe Database Access**: Relational PostgreSQL database managed via Prisma ORM.
-- **Stellar Integration Package**: Wrapper package around the `stellar-sdk` handling keys, asset creation, ticket minting, and trustline/ownership checks.
+- **Stellar Integration Package**: Wrapper package around the `stellar-sdk` handling keys, asset creation, ticket minting, contract transactions, and trustline/ownership checks.
+- **On-Chain Soroban ZK Verifier**: A Rust smart contract running on Stellar Testnet that handles trustless proof validation and persistent double-spend nullifier checks.
 
 ## 🏗 Project Structure
 
@@ -41,7 +43,8 @@ The repository is organized as a monorepo containing application suites and shar
 ### Shared Packages
 
 - **`packages/database/`**: Shared client setup containing the Prisma schema definitions and migration configurations for PostgreSQL.
-- **`packages/stellar/`**: Helper library wrapping the `stellar-sdk` for wallet keypair generation, ticket asset issuing, minting, and verification.
+- **`packages/stellar/`**: Helper library wrapping the `stellar-sdk` and Soroban RPC client for wallet keypair generation, ticket asset issuing, minting, ZK on-chain verification, and ownership checks.
+- **`packages/soroban/`**: Rust smart contract library containing the `ZkTicketVerifier` contract compiled to WebAssembly for deployment to the Stellar network.
 - **`packages/ui/`**: Shared React UI components (button, card, etc.) utilized across the frontend workspace.
 - **`packages/eslint-config/`** & **`packages/typescript-config/`**: Shared linting and compiler configuration presets.
 
@@ -81,15 +84,15 @@ The repository is organized as a monorepo containing application suites and shar
    ```
 
 3. **Configure Environment Variables:**
-   Create a `.env` file in the root of the project (or inside `packages/database` and `apps/api` depending on deployment environment) with the following variables:
-
-   ```env
-   # Database connection URL (PostgreSQL)
-   DATABASE_URL="postgresql://<username>:<password>@localhost:5432/smarty_events?schema=public"
-
-   # Add additional API or Stellar environment variables as needed
-   PORT=3001
+   We provide `.env.example` templates in the root, `packages/database/`, and `apps/web/` folders. Copy them to their respective local config files:
+   
+   ```bash
+   cp .env.example .env
+   cp packages/database/.env.example packages/database/.env
+   cp apps/web/.env.example apps/web/.env.local
    ```
+   
+   Configure database details and the `ZK_VERIFIER_CONTRACT_ID` variable in the root `.env` as required.
 
 4. **Generate and apply Database Schemas:**
    From the root directory, generate the Prisma client:
