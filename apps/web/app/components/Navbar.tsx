@@ -71,7 +71,6 @@ export default function Navbar() {
     { name: "Discover Events", path: "/" },
     ...(user ? [{ name: "Organizer Portal", path: "/tenant" }] : []),
     { name: "My Tickets", path: "/attendee/tickets" },
-    { name: "Gate Check-In", path: "/checkin" },
   ];
 
   return (

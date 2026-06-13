@@ -271,7 +271,10 @@ export default function AttendeeWallet() {
             transition: "all 0.2s ease"
           }}
         >
-          📧 Lookup by Email
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px" }}><rect width="20" height="16" x="2" y="4" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            Lookup by Email
+          </div>
         </button>
         <button
           onClick={() => {
@@ -294,7 +297,10 @@ export default function AttendeeWallet() {
             transition: "all 0.2s ease"
           }}
         >
-          🔌 Connect Web3 Wallet
+          <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "6px" }}><path d="M21 12V7H5a2 2 0 0 1 0-4h14v4"/><path d="M3 5v14a2 2 0 0 0 2 2h16v-5"/><path d="M18 12a2 2 0 0 0 0 4h4v-4Z"/></svg>
+            Connect Web3 Wallet
+          </div>
         </button>
       </div>
 
@@ -310,7 +316,7 @@ export default function AttendeeWallet() {
             required
             style={{ flexGrow: 1 }}
           />
-          <button type="submit" className="btn btn-primary">
+          <button type="submit" className="btn btn-primary" style={{ whiteSpace: "nowrap" }}>
             Access Tickets
           </button>
         </form>
@@ -377,7 +383,8 @@ export default function AttendeeWallet() {
               </div>
               <div style={{ display: "flex", gap: "1rem" }}>
                 <button type="button" onClick={() => fetchTicketsByWallet(connectedPublicKey)} className="btn btn-primary">
-                  🔄 Refresh Wallet Assets
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "text-bottom", marginRight: "6px" }}><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" /><path d="M3 3v5h5" /></svg>
+                  Refresh Wallet Assets
                 </button>
                 <button type="button" onClick={connectWallet} className="btn btn-secondary">
                   Use Different Wallet
@@ -396,7 +403,12 @@ export default function AttendeeWallet() {
                 className="btn btn-primary"
                 style={{ padding: "0.75rem 2rem", fontSize: "0.95rem" }}
               >
-                {isConnectingWallet ? "Connecting..." : `🔌 Connect ${walletProvider === "albedo" ? "Albedo" : "Freighter"} Wallet`}
+                {isConnectingWallet ? "Connecting..." : (
+                  <>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "text-bottom", marginRight: "6px" }}><path d="M12 22v-5"/><path d="M9 8V2"/><path d="M15 8V2"/><path d="M18 8v5a4 4 0 0 1-4 4h-4a4 4 0 0 1-4-4V8Z"/></svg>
+                    Connect {walletProvider === "albedo" ? "Albedo" : "Freighter"} Wallet
+                  </>
+                )}
               </button>
             </div>
           )}
@@ -477,8 +489,9 @@ export default function AttendeeWallet() {
                       {tkt.stellarAssetCode}
                     </span>
                     {tkt.zkCommitment && (
-                      <span className="badge badge-success" style={{ background: "rgba(16, 185, 129, 0.2)", color: "#10b981", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
-                        🛡️ ZK Privacy
+                      <span className="badge badge-success" style={{ background: "rgba(16, 185, 129, 0.2)", color: "#10b981", border: "1px solid rgba(16, 185, 129, 0.3)", display: "inline-flex", alignItems: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "4px" }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        ZK Privacy
                       </span>
                     )}
                   </div>
@@ -534,12 +547,13 @@ export default function AttendeeWallet() {
                       justifyContent: "center",
                       color: "var(--success)"
                     }}>
-                      <span style={{ fontSize: "2rem", fontWeight: "bold" }}>✓</span>
+                      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" style={{ display: "block" }}><path d="M20 6 9 17l-5-5"/></svg>
                       <span style={{ fontSize: "0.85rem", fontWeight: "600", marginTop: "0.5rem" }}>Checked In</span>
                     </div>
                   ) : zkKeysMissing ? (
                     <div style={{ textAlign: "center", color: "var(--warning)", fontSize: "0.85rem" }}>
-                      ⚠️ ZK Keys Missing on this Device <br/>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "text-bottom", marginRight: "4px" }}><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+                      ZK Keys Missing on this Device <br/>
                       <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                         Purchased from another browser.
                       </span>
@@ -555,7 +569,10 @@ export default function AttendeeWallet() {
                         animation: "spin 1s linear infinite",
                         margin: "0 auto 0.75rem auto"
                       }} />
-                      🛡️ Generating ZK Proof...
+                      <div style={{ display: "flex", alignItems: "center", justifyContent: "center" }}>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "4px" }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                        Generating ZK Proof...
+                      </div>
                     </div>
                   ) : qrCodeUrl ? (
                     <div style={{ textAlign: "center" }}>
@@ -564,19 +581,46 @@ export default function AttendeeWallet() {
                         padding: "8px",
                         borderRadius: "12px",
                         display: "inline-block",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                        marginBottom: "0.5rem"
                       }}>
                         <Image src={qrCodeUrl} alt="Ticket QR code token" width={150} height={150} unoptimized style={{ display: "block" }} />
                       </div>
-                      <span style={{ display: "block", fontSize: "0.75rem", color: isZkProtected ? "#10b981" : "var(--text-muted)", marginTop: "0.75rem" }}>
+                      
+                      <div style={{ marginBottom: "0.5rem" }}>
+                        <button
+                          onClick={() => {
+                            if (qrToken) {
+                              navigator.clipboard.writeText(qrToken);
+                              alert("Token copied! You can now paste this into the Gate Scanner simulator (/checkin)");
+                            }
+                          }}
+                          style={{
+                            background: "var(--surface)",
+                            border: "1px solid var(--border)",
+                            color: "var(--text)",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "0.7rem",
+                            cursor: "pointer",
+                          }}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: "4px" }}><rect width="14" height="14" x="8" y="8" rx="2" ry="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>
+                          Copy Raw Token
+                        </button>
+                      </div>
+
+                      <span style={{ display: "block", fontSize: "0.75rem", color: isZkProtected ? "#10b981" : "var(--text-muted)", marginTop: "0.25rem" }}>
                         {isZkProtected ? (
                           <>
-                            🛡️ ZK Private Token <br/>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: "4px" }}><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                            ZK Private Token <br/>
                             (Identity Protected)
                           </>
                         ) : (
                           <>
-                            🔒 Cryptographic Dynamic Token <br/>
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ display: "inline-block", verticalAlign: "middle", marginRight: "4px" }}><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+                            Cryptographic Dynamic Token <br/>
                             (Auto-refreshing)
                           </>
                         )}
