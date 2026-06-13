@@ -168,11 +168,16 @@ For details on security protocols, secure offline QR tickets (using HMAC tokens)
 
 We welcome contributions!
 
+> [!IMPORTANT]
+> **Testing Requirement**: You MUST write tests for any changes or new features you introduce. Pull requests will not be approved or merged unless all automated checks and tests pass.
+
 1. Fork this repository.
 2. Create your feature branch (`git checkout -b feature/cool-feature`).
-3. Commit your changes (`git commit -m 'Add some cool feature'`).
-4. Push to the branch (`git push origin feature/cool-feature`).
-5. Open a Pull Request.
+3. Write comprehensive unit/integration tests for your changes.
+4. Commit your changes (`git commit -m 'Add some cool feature'`).
+5. Verify tests and typing pass locally (`npm run test`, `npm run test:rust`, and `npm run check-types`).
+6. Push to the branch (`git push origin feature/cool-feature`).
+7. Open a Pull Request.
 
 ## 📄 License
 
