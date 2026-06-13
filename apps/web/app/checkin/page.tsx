@@ -42,6 +42,51 @@ export default function GateScanner() {
       // Simulation gate scanning logic from local storage
       setTimeout(() => {
         const parts = qrToken.split(":");
+        
+        if (parts[0] === "zk") {
+          if (parts.length !== 4) {
+            setErrorMsg("Check-in rejected: Invalid ZK QR token format");
+            setLoading(false);
+            return;
+          }
+
+          const [, proof, commitment, nullifierHash] = parts;
+
+          // Look up ticket in localStorage mock tickets
+          const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]");
+          const tktIndex = localTickets.findIndex((t: any) => t.zkCommitment === commitment);
+
+          if (tktIndex === -1) {
+            setErrorMsg("Check-in rejected: No active ticket found matching this ZK commitment.");
+            setLoading(false);
+            return;
+          }
+
+          const ticket = localTickets[tktIndex];
+
+          if (ticket.status === "CHECKED_IN") {
+            setErrorMsg("Double-Spend Detected! This ZK ticket was already checked in.");
+            setLoading(false);
+            return;
+          }
+
+          // Mark ticket checked-in
+          ticket.status = "CHECKED_IN";
+          ticket.zkNullifierHash = nullifierHash;
+          localTickets[tktIndex] = ticket;
+          localStorage.setItem("mock_tickets", JSON.stringify(localTickets));
+
+          setResult({
+            message: "ZK Check-in successful! (Simulation Mode)",
+            attendeeName: "Anonymous (ZK Verified)",
+            ticketType: ticket.ticketType.name,
+            eventTitle: ticket.ticketType.event.title,
+            scannedAt: new Date().toISOString(),
+          });
+          setLoading(false);
+          return;
+        }
+
         if (parts.length !== 4) {
           setErrorMsg("Check-in rejected: Invalid QR token format");
           setLoading(false);
