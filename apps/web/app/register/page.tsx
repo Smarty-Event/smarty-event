@@ -40,37 +40,9 @@ export default function RegisterPage() {
 
       window.dispatchEvent(new Event("storage"));
       router.push("/tenant");
-    } catch (err) {
-      console.warn("Register failed, running simulation fallback:", err);
-      
-      // Simulation register fallback
-      setTimeout(() => {
-        const mockUser = {
-          id: `mock-user-${Math.random().toString(36).substr(2, 9)}`,
-          email: email.toLowerCase(),
-          role: "OWNER",
-          tenantId: `mock-tenant-${tenantSlug}`,
-          tenantName: tenantName,
-        };
-
-        // Save simulated tenant details locally
-        const mockTenantObj = {
-          id: mockUser.tenantId,
-          name: tenantName,
-          slug: tenantSlug.toLowerCase(),
-          stellarPublicKey: "GDX7MOCKDISTRIBUTOR" + Math.random().toString(36).substr(2, 4).toUpperCase(),
-        };
-
-        const localTenants = JSON.parse(localStorage.getItem("mock_tenants") || "[]");
-        localTenants.push(mockTenantObj);
-        localStorage.setItem("mock_tenants", JSON.stringify(localTenants));
-
-        localStorage.setItem("smarty_auth_token", "mock-jwt-token-abc");
-        localStorage.setItem("smarty_user", JSON.stringify(mockUser));
-
-        window.dispatchEvent(new Event("storage"));
-        router.push("/tenant");
-      }, 1000);
+    } catch (err: any) {
+      console.error("Register failed:", err);
+      setErrorMsg(err.message || "An unexpected error occurred during registration.");
     } finally {
       setLoading(false);
     }

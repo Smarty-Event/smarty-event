@@ -14,6 +14,7 @@ export default function Navbar() {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [theme, setTheme] = useState<"dark" | "light">("dark");
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     const syncTheme = () => {
@@ -109,8 +110,8 @@ export default function Navbar() {
           </span>
         </Link>
 
-        {/* Links */}
-        <div style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
+        {/* Desktop Links */}
+        <div className="hidden-on-mobile" style={{ display: "flex", alignItems: "center", gap: "1.5rem" }}>
           {navItems.map((item) => {
             const isActive = pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path));
             return (
@@ -123,7 +124,8 @@ export default function Navbar() {
                   color: isActive ? "var(--primary)" : "var(--text-muted)",
                   position: "relative",
                   padding: "0.5rem 0",
-                  transition: "color 0.2s ease"
+                  transition: "color 0.2s ease",
+                  whiteSpace: "nowrap"
                 }}
               >
                 {item.name}
@@ -218,7 +220,91 @@ export default function Navbar() {
             </div>
           )}
         </div>
+
+        {/* Mobile Hamburger Toggle */}
+        <div className="visible-on-mobile" style={{ display: "flex", alignItems: "center", gap: "1rem" }}>
+          <button
+            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            className="btn btn-secondary"
+            style={{ padding: "0.5rem", borderRadius: "8px" }}
+          >
+            {isMobileMenuOpen ? (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18" />
+                <line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            ) : (
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="3" y1="12" x2="21" y2="12" />
+                <line x1="3" y1="6" x2="21" y2="6" />
+                <line x1="3" y1="18" x2="21" y2="18" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
+
+      {/* Mobile Menu Dropdown */}
+      {isMobileMenuOpen && (
+        <div className="visible-on-mobile glass" style={{
+          flexDirection: "column",
+          padding: "1rem",
+          gap: "1rem",
+          borderTop: "1px solid var(--border)",
+          borderBottom: "1px solid var(--border)",
+        }}>
+          {navItems.map((item) => (
+            <Link
+              key={item.path}
+              href={item.path}
+              onClick={() => setIsMobileMenuOpen(false)}
+              style={{
+                padding: "0.75rem 1rem",
+                fontSize: "1rem",
+                fontWeight: "500",
+                color: (pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path))) ? "var(--primary)" : "var(--text-muted)",
+                borderRadius: "8px",
+                backgroundColor: (pathname === item.path || (item.path !== "/" && pathname.startsWith(item.path))) ? "var(--primary-glow)" : "transparent"
+              }}
+            >
+              {item.name}
+            </Link>
+          ))}
+          
+          <div style={{ height: "1px", backgroundColor: "var(--border)", margin: "0.5rem 0" }} />
+          
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 1rem" }}>
+            <span style={{ fontSize: "0.95rem", color: "var(--text-muted)", fontWeight: 500 }}>Theme</span>
+            <button
+              onClick={toggleTheme}
+              className="btn btn-secondary"
+              style={{ padding: "0.5rem", borderRadius: "8px" }}
+            >
+              {theme === "light" ? "Switch to Dark" : "Switch to Light"}
+            </button>
+          </div>
+
+          <div style={{ height: "1px", backgroundColor: "var(--border)", margin: "0.5rem 0" }} />
+
+          {user ? (
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "0 1rem" }}>
+              <span style={{ fontSize: "0.95rem", fontWeight: 500 }}>{user.tenantName || user.email}</span>
+              <button onClick={() => { handleLogout(); setIsMobileMenuOpen(false); }} className="btn btn-secondary" style={{ padding: "0.4rem 0.8rem", borderRadius: "8px" }}>
+                Logout
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", padding: "0 0.5rem" }}>
+              <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="btn btn-secondary" style={{ width: "100%", justifyContent: "center" }}>
+                Sign In
+              </Link>
+              <Link href="/register" onClick={() => setIsMobileMenuOpen(false)} className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>
+                Sign Up
+              </Link>
+            </div>
+          )}
+        </div>
+      )}
     </nav>
   );
 }

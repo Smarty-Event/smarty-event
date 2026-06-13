@@ -39,25 +39,9 @@ export default function LoginPage() {
       window.dispatchEvent(new Event("storage"));
 
       router.push("/tenant");
-    } catch (err) {
-      console.warn("Login failed, running simulation fallback:", err);
-      
-      // Simulation login logic if API is offline
-      setTimeout(() => {
-        const mockUser = {
-          id: "mock-user-123",
-          email: email.toLowerCase(),
-          role: "OWNER",
-          tenantId: "mock-tenant-id-stellar",
-          tenantName: "Simulated Tenant Org",
-        };
-
-        localStorage.setItem("smarty_auth_token", "mock-jwt-token-abc");
-        localStorage.setItem("smarty_user", JSON.stringify(mockUser));
-
-        window.dispatchEvent(new Event("storage"));
-        router.push("/tenant");
-      }, 1000);
+    } catch (err: any) {
+      console.error("Login failed:", err);
+      setErrorMsg(err.message || "An unexpected error occurred during login.");
     } finally {
       setLoading(false);
     }
