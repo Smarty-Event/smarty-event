@@ -33,7 +33,9 @@ services:
       JWT_SECRET: "smarty-events-super-secret-jwt-key"
       HMAC_SECRET: "smarty-events-super-secret-hmac-key-for-dynamic-qr-tokens"
       NEXT_PUBLIC_API_URL: "${NEXT_PUBLIC_API_URL:-http://localhost:3001}"
+      ZK_VERIFIER_CONTRACT_ID: "${ZK_VERIFIER_CONTRACT_ID:-CBATWOA2NBYJUKYF2UULNUWU52XQZBNGDIMK64GIHIEVABI6WYQ45K62}"
     depends_on:
+
       database:
         condition: service_healthy
     command: npm run dev --workspace=api
