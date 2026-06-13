@@ -12,6 +12,7 @@ SmartyEvents is a multi-tenant, blockchain-powered event management and ticketin
 * **Streamline Multi-Tenant SaaS Operations**: Isolate data, branding, and billing for individual organizations while providing central portals for discoverability and authentication.
 * **Ensure Fast, Resilient Check-In**: Create a check-in protocol utilizing time-sensitive cryptographic HMAC tokens that can verify ticket validity at event gates even under poor network conditions.
 * **Demonstrate Blockchain Utility**: Hide blockchain complexity from non-technical users via custodial wallet setups, while maintaining full decentralization of ticket assets.
+* **Preserve Attendee Privacy (Zero-Knowledge)**: Provide a zero-knowledge check-in option enabling attendees to verify ticket ownership without revealing identity or Stellar address details, using on-chain smart contracts.
 
 ---
 
@@ -44,15 +45,19 @@ SmartyEvents is a multi-tenant, blockchain-powered event management and ticketin
   * The attendee's key signs a trustline (ChangeTrust) to authorize the custom ticket asset.
   * The tenant's distributor wallet sends exactly `1` ticket asset (e.g., `EVT26VIP`) to the attendee's public key.
   * The transaction hash is stored in the database.
+* **ZK Privacy Opt-In**: Attendees can opt-in to "ZK Privacy" mode. If chosen, the browser generates a local secret and nullifier, and submits a public commitment hash (`commitment = Hash(secret, nullifier)`) to the backend to store with the ticket.
 
 ### D. Attendee Digital Wallet
 * **Ticket View**: A dashboard displaying all tickets matching the attendee's email/account.
 * **Dynamic QR Code**: Displays a QR code representing a cryptographic token. To prevent screenshots from being re-used or shared, the token contains a timestamp and is signed with HMAC-SHA256, regenerating every 30 seconds.
+* **Zero-Knowledge Proof QR**: For ZK-enabled tickets, the wallet generates a ZK proof client-side, showing a "🛡️ ZK Privacy" badge, and packages the proof payload (`proof`, `nullifierHash`, and `commitment`) into the QR code for entry.
 
 ### E. Gate Check-In Verification
 * **Cryptographic Verification**: The check-in tool decodes the scanned QR token, checks the HMAC signature for tampering, and verifies that the ticket is not expired.
 * **On-Chain Balance Check**: Queries the Stellar Horizon network to verify that the attendee's public key holds a balance `>= 1` of the ticket asset code issued by the tenant.
 * **Double-Spend Check**: Confirms that the `ticketId` has not already been marked checked-in in the database.
+* **On-Chain Soroban ZK Verification**: When scanning a ZK-proof QR code, the gate verification calls a Soroban contract method `verify_and_claim` on-chain (Stellar Testnet) to validate the ZK proof and verify the `nullifierHash` is unspent.
+* **On-Chain Double-Spend Protection**: The Soroban contract stores spent `nullifierHash` values in its persistent ledger storage, preventing double-spend attempts trustlessly on the blockchain.
 
 ---
 

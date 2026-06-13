@@ -14,6 +14,7 @@ graph TD
     API -->|Prisma Client| DB[(PostgreSQL Database)]
     API -->|Wrapper Methods| SDK[packages/stellar: SDK Wrapper]
     SDK -->|Horizon RPC Queries| Stellar((Stellar Horizon Testnet))
+    SDK -->|Soroban Smart Contract Calls| SorobanContract((Soroban Contract: ZkTicketVerifier))
 ```
 
 ### Directory Structure
@@ -21,6 +22,7 @@ graph TD
 * **`apps/web`**: Next.js 16 Web application (runs on port 3000).
 * **`packages/database`**: Shared Prisma ORM client and database migration configs.
 * **`packages/stellar`**: Shared library containing wrappers around the `stellar-sdk` (v13) to interact with the Stellar network.
+* **`packages/soroban`**: Rust smart contract library containing the ZK Ticket Verifier contract deployed to Stellar Testnet.
 * **`packages/ui`**: Shared UI library for generic layout components.
 
 ---
@@ -75,6 +77,45 @@ Since network connectivity can be unreliable at event gates, tickets use a dynam
 * **Dynamic Lifecycle**: The timestamp is checked on the verification side to prevent replay attacks (e.g., a scanned screenshot of a QR code is only valid for 60 seconds).
 * **Double-Spend Protection**: Once a check-in is verified, a record is written to the `CheckIn` table, preventing the same ticket from checking in again.
 
+### D. Zero-Knowledge (ZK) Privacy-Preserving Check-In
+To provide absolute attendee privacy while verifying ticket validity, SmartyEvents integrates a hybrid client-database-onchain ZK check-in protocol utilizing a Soroban smart contract.
+
+```mermaid
+sequenceDiagram
+    participant Attendee as Attendee Web Client
+    participant API as NestJS Backend API
+    participant DB as PostgreSQL Database
+    participant Soroban as Soroban Smart Contract
+    participant Scanner as Gate Scanner Simulator
+
+    Note over Attendee: Checkout
+    Attendee->>Attendee: Generate secret & nullifier
+    Attendee->>Attendee: commitment = Hash(secret, nullifier)
+    Attendee->>API: POST /tickets/buy with commitment
+    API->>DB: Store ticket (zkCommitment = commitment)
+    DB-->>Attendee: Ticket Confirmation
+
+    Note over Attendee: Wallet Presentation
+    Attendee->>Attendee: Load secret & nullifier from localStorage
+    Attendee->>Attendee: Generate proof & nullifierHash
+    Attendee->>Attendee: Generate QR code: zk:proof:commitment:nullifierHash
+
+    Note over Scanner, API: Gate Check-in Scan
+    Scanner->>API: POST /checkin with ZK QR payload
+    API->>Soroban: simulate/call verify_and_claim(proof, commitment, nullifierHash)
+    Note over Soroban: 1. Assert nullifierHash is not spent<br/>2. Verify cryptographic proof<br/>3. Store nullifierHash as spent
+    Soroban-->>API: Tx Hash & Success
+    API->>DB: Update Ticket Status (zkNullifierHash = nullifierHash)
+    API-->>Scanner: Verify & Admit Attendee
+```
+
+* **Client-Side Secret Storage**: When an attendee purchases a ticket with ZK Privacy enabled, the Next.js frontend generates a cryptographically secure `secret` and `nullifier` locally, keeping them only in the user's browser `localStorage`.
+* **Public Commitment**: The attendee's client registers a hash of these values (`zkCommitment = SHA256(secret || nullifier)`) in the database upon ticket purchase.
+* **On-Chain Soroban Smart Contract**: Written in Rust, the `ZkTicketVerifier` smart contract is deployed to Stellar Testnet (Contract ID: `CBATWOA2NBYJUKYF2UULNUWU52XQZBNGDIMK64GIHIEVABI6WYQ45K62`). It provides:
+  * `is_spent(nullifier_hash)`: A simulated query to check if the ticket has been checked in before (for gas-free, instant validation).
+  * `verify_and_claim(proof, commitment, nullifier_hash)`: A stateful transaction that verifies the ZK proof and registers the nullifier hash in persistent storage to prevent double-spending.
+* **Scan Token Format**: The gate scanner parses a ZK-formatted string: `zk:<proof_hex>:<commitment_hex>:<nullifier_hash_hex>`.
+
 ---
 
 ## 3. Database Schema Blueprint
@@ -128,6 +169,8 @@ model Ticket {
   stellarAssetCode String?      // e.g. EVT26VIP
   stellarTxHash    String?      // Transaction hash of minting/transfer
   status           TicketStatus @default(CREATED)
+  zkCommitment     String?      // Client-side generated commitment (SHA-256)
+  zkNullifierHash  String?      @unique // Marks spent nullifier to prevent double check-in
   checkIns         CheckIn[]
 }
 ```
@@ -145,10 +188,10 @@ The API exposes the following endpoints (all prefixed with `/api`):
 | **POST** | `/events` | Create a new event | `{ title, description, startDate, endDate, capacity }` (Header: `X-Tenant-ID`) |
 | **GET** | `/events` | List events under active tenant | Query filter by `tenantId` |
 | **POST** | `/events/:id/ticket-types`| Add ticket class & setup Stellar asset | `{ name, price, currency, quantity }` |
-| **POST** | `/tickets/buy` | Purchase ticket, generates keys & mints asset | `{ ticketTypeId, attendeeName, attendeeEmail, paymentMethod }` |
+| **POST** | `/tickets/buy` | Purchase ticket, generates keys & mints asset | `{ ticketTypeId, attendeeName, attendeeEmail, paymentMethod, zkCommitment? }` |
 | **GET** | `/tickets/attendee/:email`| Retrieve all tickets for an attendee | None |
 | **GET** | `/tickets/:id/qr-token` | Generate fresh HMAC-SHA256 QR token | None |
-| **POST** | `/checkin` | Verify scan token & check-in attendee | `{ qrToken, scannedById, deviceId }` |
+| **POST** | `/checkin` | Verify scan token & check-in attendee | `{ qrToken, scannedById, deviceId, zkProof?, zkCommitment?, zkNullifierHash? }` |
 
 ---
 
