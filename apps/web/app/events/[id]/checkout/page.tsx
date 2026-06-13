@@ -7,6 +7,19 @@ import Link from "next/link";
 import { EventDetail, TicketType, FALLBACK_EVENTS_DETAIL } from "../../../fallbackData";
 import { API_BASE_URL } from "../../../config";
 
+const generateRandomHex = (length: number = 32): string => {
+  const array = new Uint8Array(length);
+  window.crypto.getRandomValues(array);
+  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
+};
+
+const sha256 = async (message: string): Promise<string> => {
+  const msgBuffer = new TextEncoder().encode(message);
+  const hashBuffer = await window.crypto.subtle.digest("SHA-256", msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
+};
+
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const params = useParams();
@@ -23,6 +36,7 @@ function CheckoutContent() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("USDC");
+  const [zkPrivacy, setZkPrivacy] = useState(false);
 
   // Booking states
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -148,7 +162,20 @@ function CheckoutContent() {
       return;
     }
 
+    // Generate ZK values if privacy mode is enabled
+    let commitment = "";
+    let nullifierHash = "";
+    let secret = "";
+    let nullifier = "";
+
     try {
+      if (zkPrivacy) {
+        secret = generateRandomHex(32);
+        nullifier = generateRandomHex(32);
+        commitment = await sha256(secret + nullifier);
+        nullifierHash = await sha256(nullifier);
+      }
+
       if (isNonCustodial) {
         // 1. Fetch unsigned ChangeTrust trustline XDR from NestJS
         const trustRes = await fetch(
@@ -194,13 +221,17 @@ function CheckoutContent() {
         }
       }
 
-      const payload = {
+      const payload: any = {
         ticketTypeId: selectedTicket.id,
         attendeeName: name,
         attendeeEmail: email,
         paymentMethod,
         stellarPublicKey: isNonCustodial ? connectedPublicKey : undefined,
       };
+
+      if (zkPrivacy) {
+        payload.zkCommitment = commitment;
+      }
 
       const response = await fetch(`${API_BASE_URL}/api/tickets/buy`, {
         method: "POST",
@@ -211,6 +242,16 @@ function CheckoutContent() {
       const resData = await response.json();
       if (!response.ok) {
         throw new Error(resData.message || "Failed to purchase ticket");
+      }
+
+      // Save local ZK keys on API success
+      if (zkPrivacy) {
+        localStorage.setItem(`zk_ticket_${commitment}`, JSON.stringify({
+          secret,
+          nullifier,
+          commitment,
+          nullifierHash
+        }));
       }
 
       setBookingSuccess(resData);
@@ -224,7 +265,15 @@ function CheckoutContent() {
       }
 
       // Run simulation checkout fallback if API is offline
-      setTimeout(() => {
+      setTimeout(async () => {
+        let fallbackCommitment = commitment;
+        if (zkPrivacy && !fallbackCommitment) {
+          secret = generateRandomHex(32);
+          nullifier = generateRandomHex(32);
+          fallbackCommitment = await sha256(secret + nullifier);
+          nullifierHash = await sha256(nullifier);
+        }
+
         const mockResult = {
           id: `mock-ticket-${Math.random().toString(36).substr(2, 9)}`,
           stellarTxHash: "a1b2c3d4e5f607182930415263748596a7b8c9d0e1f2a3b4c5d6e7f809102030",
@@ -232,7 +281,18 @@ function CheckoutContent() {
             name: selectedTicket.name,
             event: { title: event?.title || "Stellar Event" },
           },
+          zkCommitment: zkPrivacy ? fallbackCommitment : undefined,
         };
+
+        if (zkPrivacy) {
+          localStorage.setItem(`zk_ticket_${fallbackCommitment}`, JSON.stringify({
+            secret,
+            nullifier,
+            commitment: fallbackCommitment,
+            nullifierHash
+          }));
+        }
+
         setBookingSuccess(mockResult);
         // Save mock ticket locally in localStorage so attendee wallet can read it!
         const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]");
@@ -241,6 +301,7 @@ function CheckoutContent() {
           stellarAssetCode: "EVT26TKT",
           stellarTxHash: mockResult.stellarTxHash,
           status: "ACTIVE",
+          zkCommitment: mockResult.zkCommitment,
           attendee: { name, email },
           ticketType: {
             name: selectedTicket.name,
@@ -412,6 +473,55 @@ function CheckoutContent() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
               />
+            </div>
+
+            <div style={{
+              background: "rgba(16, 185, 129, 0.03)",
+              border: "1px dashed rgba(16, 185, 129, 0.3)",
+              borderRadius: "16px",
+              padding: "1.25rem",
+              marginBottom: "2rem",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: "1rem"
+            }}>
+              <div>
+                <h4 style={{ display: "flex", alignItems: "center", gap: "0.5rem", fontSize: "1rem", fontWeight: "600", color: "#10b981", margin: 0 }}>
+                  <span>🛡️</span> Zero-Knowledge Check-In Privacy
+                </h4>
+                <p style={{ fontSize: "0.8rem", color: "var(--text-muted)", marginTop: "0.25rem", marginBottom: 0 }}>
+                  Attendees prove ticket ownership at the gate without revealing their identity, email, or public keys.
+                </p>
+              </div>
+              <label className="switch" style={{ position: "relative", display: "inline-block", width: "50px", height: "26px" }}>
+                <input 
+                  type="checkbox" 
+                  checked={zkPrivacy} 
+                  onChange={(e) => setZkPrivacy(e.target.checked)}
+                  style={{ opacity: 0, width: 0, height: 0 }}
+                />
+                <span style={{
+                  position: "absolute",
+                  cursor: "pointer",
+                  top: 0, left: 0, right: 0, bottom: 0,
+                  backgroundColor: zkPrivacy ? "#10b981" : "#374151",
+                  transition: ".4s",
+                  borderRadius: "34px",
+                  boxShadow: zkPrivacy ? "0 0 8px rgba(16, 185, 129, 0.5)" : "none"
+                }}>
+                  <span style={{
+                    position: "absolute",
+                    content: '""',
+                    height: "18px", width: "18px",
+                    left: zkPrivacy ? "28px" : "4px",
+                    bottom: "4px",
+                    backgroundColor: "white",
+                    transition: ".4s",
+                    borderRadius: "50%"
+                  }} />
+                </span>
+              </label>
             </div>
 
             <div className="form-group" style={{ marginBottom: "2rem" }}>

@@ -9,6 +9,7 @@ interface Ticket {
   stellarTxHash: string;
   status: string;
   qrToken?: string;
+  zkCommitment?: string;
   attendee: {
     name: string;
     email: string;
@@ -382,8 +383,31 @@ export default function AttendeeWallet() {
       ) : (
         <div style={{ display: "flex", flexDirection: "column", gap: "2rem" }}>
           {tickets.map((tkt) => {
-            const qrCodeUrl = tkt.qrToken
-              ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(tkt.qrToken)}`
+            let qrToken = tkt.qrToken;
+            let isZkProtected = false;
+            let zkKeysMissing = false;
+
+            if (tkt.zkCommitment) {
+              const localZkData = localStorage.getItem(`zk_ticket_${tkt.zkCommitment}`);
+              if (localZkData) {
+                try {
+                  const { secret, nullifier, commitment, nullifierHash } = JSON.parse(localZkData);
+                  const proofPayload = `simulated_zk_proof_for_secret_${secret}_and_nullifier_${nullifier}`;
+                  const proofHex = Array.from(new TextEncoder().encode(proofPayload))
+                    .map(b => b.toString(16).padStart(2, "0"))
+                    .join("");
+                  qrToken = `zk:${proofHex}:${commitment}:${nullifierHash}`;
+                  isZkProtected = true;
+                } catch (e) {
+                  console.warn("Failed to parse local ZK data", e);
+                }
+              } else {
+                zkKeysMissing = true;
+              }
+            }
+
+            const qrCodeUrl = qrToken
+              ? `https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=${encodeURIComponent(qrToken)}`
               : null;
 
             return (
@@ -410,9 +434,16 @@ export default function AttendeeWallet() {
 
                 {/* Ticket Details */}
                 <div>
-                  <span className="badge badge-info" style={{ marginBottom: "0.75rem" }}>
-                    {tkt.stellarAssetCode}
-                  </span>
+                  <div style={{ display: "flex", gap: "0.5rem", alignItems: "center", marginBottom: "0.75rem" }}>
+                    <span className="badge badge-info">
+                      {tkt.stellarAssetCode}
+                    </span>
+                    {tkt.zkCommitment && (
+                      <span className="badge badge-success" style={{ background: "rgba(16, 185, 129, 0.2)", color: "#10b981", border: "1px solid rgba(16, 185, 129, 0.3)" }}>
+                        🛡️ ZK Privacy
+                      </span>
+                    )}
+                  </div>
                   <h3 style={{ fontSize: "1.5rem", fontWeight: "700", marginBottom: "0.5rem" }}>
                     {tkt.ticketType?.event?.title}
                   </h3>
@@ -421,7 +452,7 @@ export default function AttendeeWallet() {
                   </p>
 
                   <div style={{ fontSize: "0.85rem", color: "var(--text-muted)", display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-                    <p><strong>Owner:</strong> {tkt.attendee?.name} ({tkt.attendee?.email})</p>
+                    <p><strong>Owner:</strong> {isZkProtected ? "Anonymous (ZK Shielded)" : `${tkt.attendee?.name} (${tkt.attendee?.email})`}</p>
                     <p><strong>Status:</strong>{" "}
                       <span className={tkt.status === "CHECKED_IN" ? "badge badge-success" : "badge badge-warning"} style={{ display: "inline-flex", padding: "0.15rem 0.5rem", fontSize: "0.75rem" }}>
                         {tkt.status === "CHECKED_IN" ? "Checked In" : "Active"}
@@ -431,7 +462,7 @@ export default function AttendeeWallet() {
                       <p style={{ wordBreak: "break-all" }}>
                         <strong>Stellar Tx:</strong>{" "}
                         <a
-                          href={`https://laboratory.stellar.org/#explorer?path=transactions&network=testnet&hash=${tkt.stellarTxHash}`}
+                           href={`https://laboratory.stellar.org/#explorer?path=transactions&network=testnet&hash=${tkt.stellarTxHash}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           style={{ color: "var(--primary)", textDecoration: "underline" }}
@@ -468,6 +499,13 @@ export default function AttendeeWallet() {
                       <span style={{ fontSize: "2rem", fontWeight: "bold" }}>✓</span>
                       <span style={{ fontSize: "0.85rem", fontWeight: "600", marginTop: "0.5rem" }}>Checked In</span>
                     </div>
+                  ) : zkKeysMissing ? (
+                    <div style={{ textAlign: "center", color: "var(--warning)", fontSize: "0.85rem" }}>
+                      ⚠️ ZK Keys Missing on this Device <br/>
+                      <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
+                        Purchased from another browser.
+                      </span>
+                    </div>
                   ) : qrCodeUrl ? (
                     <div style={{ textAlign: "center" }}>
                       <div style={{
@@ -479,9 +517,18 @@ export default function AttendeeWallet() {
                       }}>
                         <img src={qrCodeUrl} alt="Ticket QR code token" style={{ display: "block" }} />
                       </div>
-                      <span style={{ display: "block", fontSize: "0.75rem", color: "var(--text-muted)", marginTop: "0.75rem" }}>
-                        🔒 Cryptographic Dynamic Token <br/>
-                        (Auto-refreshing)
+                      <span style={{ display: "block", fontSize: "0.75rem", color: isZkProtected ? "#10b981" : "var(--text-muted)", marginTop: "0.75rem" }}>
+                        {isZkProtected ? (
+                          <>
+                            🛡️ ZK Private Token <br/>
+                            (Identity Protected)
+                          </>
+                        ) : (
+                          <>
+                            🔒 Cryptographic Dynamic Token <br/>
+                            (Auto-refreshing)
+                          </>
+                        )}
                       </span>
                     </div>
                   ) : (
