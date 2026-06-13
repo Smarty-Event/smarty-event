@@ -46,12 +46,13 @@ This file serves as a guide for AI assistants (like Claude, Cursor, Antigravity,
 - [x] Containerized dev stack with multi-tenant configurations.
 - [x] Implemented on-chain Soroban verifier Rust contract (`ZkTicketVerifier`) deployed to Stellar Testnet.
 - [x] Integrated ZK verification into the backend NestJS service layer.
-- [x] Integrated client-side commitment generation & simulated proving in Next.js portal checkout.
+- [x] Integrated client-side commitment generation & actual mathematical proving in Next.js portal checkout.
+- [x] Implemented actual client-side ZK-SNARK provers (Pedersen commitments + Fiat-Shamir NIZKP) and backend/frontend verifiers.
 - [x] Resolved all Next.js frontend ESLint and type compiler warnings (monorepo checks pass with 0 errors/warnings).
 - [x] Added unit tests coverage for all backend service suites and Rust contract functions.
 - [x] Configured `@repo/stellar` to export TypeScript sources directly, resolving CI typechecking issues.
 
 ### Upcoming Backlog
-- [ ] Implement actual client-side ZK-SNARK provers (rather than simulation/mock fallbacks).
 - [ ] Set up automated frontend/E2E test suite (e.g., using Vitest or Playwright).
 - [ ] Configure live testnet check-in scans rather than simulator fallback registry.
+
