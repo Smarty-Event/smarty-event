@@ -37,10 +37,10 @@ export default function Home() {
   const filteredEvents = events.filter((evt) => {
     const categoryMatch = activeTab === "All" || evt.category === activeTab;
     const query = searchQuery.toLowerCase().trim();
-    const searchMatch = !query || 
-      evt.title.toLowerCase().includes(query) || 
+    const searchMatch = !query ||
+      evt.title.toLowerCase().includes(query) ||
       evt.description.toLowerCase().includes(query);
-    
+
     return categoryMatch && searchMatch;
   });
 
@@ -69,7 +69,7 @@ export default function Home() {
           marginBottom: "1rem",
           lineHeight: "1.1"
         }}>
-          Fraud-Proof Tickets, <br/>
+          Fraud-Proof Tickets, <br />
           Backed by <span className="gradient-text">Stellar</span>
         </h1>
         <p style={{
@@ -81,7 +81,7 @@ export default function Home() {
         }}>
           Buy, trade, and verify event tickets securely. Utilizing Stellar horizon testnet trustlines and dynamic cryptographically-signed HMAC QR codes.
         </p>
-        <div style={{ display: "flex", justifyContent: "center", gap: "1rem" }}>
+        <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "center", gap: "1rem" }}>
           <Link href="/tenant" className="btn btn-primary">
             Host an Event
           </Link>
@@ -144,7 +144,7 @@ export default function Home() {
                   e.target.style.boxShadow = "none";
                 }}
               />
-              <svg 
+              <svg
                 style={{
                   position: "absolute",
                   left: "0.8rem",
@@ -155,8 +155,8 @@ export default function Home() {
                   color: "var(--text-muted)",
                   pointerEvents: "none"
                 }}
-                fill="none" 
-                stroke="currentColor" 
+                fill="none"
+                stroke="currentColor"
                 viewBox="0 0 24 24"
               >
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -213,8 +213,8 @@ export default function Home() {
                   day: "numeric",
                   year: "numeric"
                 });
-                const price = evt.ticketTypes?.[0] 
-                  ? `${evt.ticketTypes[0].price / 100} ${evt.ticketTypes[0].currency}` 
+                const price = evt.ticketTypes?.[0]
+                  ? `${evt.ticketTypes[0].price / 100} ${evt.ticketTypes[0].currency}`
                   : "Free";
 
                 return (
@@ -228,9 +228,9 @@ export default function Home() {
                       marginBottom: "1.25rem",
                       position: "relative"
                     }}>
-                      <Image 
-                        src={evt.banner || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80"} 
-                        alt={evt.title} 
+                      <Image
+                        src={evt.banner || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80"}
+                        alt={evt.title}
                         fill
                         unoptimized
                         style={{ objectFit: "cover" }}
@@ -249,7 +249,7 @@ export default function Home() {
                     <span style={{ fontSize: "0.85rem", fontWeight: "600", color: "var(--primary)", marginBottom: "0.5rem" }}>
                       {date}
                     </span>
-                    
+
                     <h3 style={{ fontSize: "1.35rem", fontWeight: "700", marginBottom: "0.75rem", lineHeight: "1.2" }}>
                       {evt.title}
                     </h3>
