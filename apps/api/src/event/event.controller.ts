@@ -4,6 +4,7 @@ import { FileInterceptor } from "@nestjs/platform-express";
 // @ts-expect-error diskStorage requires custom types if multer typings are not resolved
 import { diskStorage } from "multer";
 import { extname } from "path";
+import { Prisma } from "@prisma/client";
 import * as fs from "fs";
 
 // Ensure uploads directory exists
@@ -54,7 +55,7 @@ export class EventController {
       banner?: string;
       category?: string;
       timezone?: string;
-      venue?: Record<string, unknown>;
+      venue?: Prisma.InputJsonValue;
     }
   ) {
     return this.eventService.createEvent(tenantId, body);
@@ -73,7 +74,7 @@ export class EventController {
   @Post(":id/speakers")
   async addSpeaker(
     @Param("id") id: string,
-    @Body() body: { name: string; bio?: string; avatar?: string; social?: Record<string, unknown> }
+    @Body() body: { name: string; bio?: string; avatar?: string; social?: Prisma.InputJsonValue }
   ) {
     return this.eventService.addSpeaker(id, body);
   }
@@ -125,7 +126,7 @@ export class EventController {
       banner?: string;
       category?: string;
       timezone?: string;
-      venue?: Record<string, unknown>;
+      venue?: Prisma.InputJsonValue;
     }
   ) {
     return this.eventService.updateEvent(id, body);

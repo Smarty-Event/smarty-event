@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
 import { createTicketAsset } from "@repo/stellar";
+import { Prisma } from "@prisma/client";
 
 @Injectable()
 export class EventService {
@@ -28,7 +29,7 @@ export class EventService {
       banner?: string;
       category?: string;
       timezone?: string;
-      venue?: Record<string, unknown>;
+      venue?: Prisma.InputJsonValue;
     }
   ) {
     await this.tenantService.getTenant(tenantId);
@@ -76,7 +77,7 @@ export class EventService {
 
   async addSpeaker(
     eventId: string,
-    data: { name: string; bio?: string; avatar?: string; social?: Record<string, unknown> }
+    data: { name: string; bio?: string; avatar?: string; social?: Prisma.InputJsonValue }
   ) {
     await this.getEvent(eventId);
 
@@ -170,7 +171,7 @@ export class EventService {
       banner?: string;
       category?: string;
       timezone?: string;
-      venue?: Record<string, unknown>;
+      venue?: Prisma.InputJsonValue;
     }
   ) {
     await this.getEvent(id);
