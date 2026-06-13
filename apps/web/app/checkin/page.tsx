@@ -3,10 +3,35 @@
 import { useState } from "react";
 import { API_BASE_URL } from "../config";
 
+interface Ticket {
+  id: string;
+  status: string;
+  zkCommitment?: string;
+  zkNullifierHash?: string;
+  attendee: {
+    name: string;
+    email: string;
+  };
+  ticketType: {
+    name: string;
+    event: {
+      title: string;
+    };
+  };
+}
+
+interface ScanResult {
+  message: string;
+  attendeeName: string;
+  ticketType: string;
+  eventTitle: string;
+  scannedAt: string;
+}
+
 export default function GateScanner() {
   const [qrToken, setQrToken] = useState("");
   const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState<any>(null);
+  const [result, setResult] = useState<ScanResult | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
   const handleScan = async (e: React.FormEvent) => {
@@ -36,7 +61,7 @@ export default function GateScanner() {
       }
 
       setResult(data);
-    } catch (err: any) {
+    } catch (err) {
       console.warn("API check-in failed, running simulation fallback:", err);
       
       // Simulation gate scanning logic from local storage
@@ -50,11 +75,11 @@ export default function GateScanner() {
             return;
           }
 
-          const [, proof, commitment, nullifierHash] = parts;
+          const [, , commitment, nullifierHash] = parts;
 
           // Look up ticket in localStorage mock tickets
-          const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]");
-          const tktIndex = localTickets.findIndex((t: any) => t.zkCommitment === commitment);
+          const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]") as Ticket[];
+          const tktIndex = localTickets.findIndex((t) => t.zkCommitment === commitment);
 
           if (tktIndex === -1) {
             setErrorMsg("Check-in rejected: No active ticket found matching this ZK commitment.");
@@ -62,7 +87,7 @@ export default function GateScanner() {
             return;
           }
 
-          const ticket = localTickets[tktIndex];
+          const ticket = localTickets[tktIndex]!;
 
           if (ticket.status === "CHECKED_IN") {
             setErrorMsg("Double-Spend Detected! This ZK ticket was already checked in.");
@@ -93,7 +118,7 @@ export default function GateScanner() {
           return;
         }
 
-        const [ticketId, attendeeId, timestampStr] = parts;
+        const [ticketId, , timestampStr] = parts;
         const timestamp = parseInt(timestampStr || "0", 10);
 
         // Check token expiration (5 minutes)
@@ -104,8 +129,8 @@ export default function GateScanner() {
         }
 
         // Look up ticket in localStorage mock tickets
-        const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]");
-        const tktIndex = localTickets.findIndex((t: any) => t.id === ticketId);
+        const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]") as Ticket[];
+        const tktIndex = localTickets.findIndex((t) => t.id === ticketId);
 
         if (tktIndex === -1) {
           setErrorMsg("Check-in rejected: Ticket not found in registry.");
@@ -113,7 +138,7 @@ export default function GateScanner() {
           return;
         }
 
-        const ticket = localTickets[tktIndex];
+        const ticket = localTickets[tktIndex]!;
 
         if (ticket.status === "CHECKED_IN") {
           setErrorMsg("Double-Spend Detected! This ticket was already checked in.");
@@ -156,7 +181,7 @@ export default function GateScanner() {
         Gate-Agent Simulator
       </h1>
       <p style={{ color: "var(--text-muted)", marginBottom: "2rem" }}>
-        Paste the time-sensitive HMAC QR token from the attendee's ticket wallet to simulate the gate scanner.
+        Paste the time-sensitive HMAC QR token from the attendee&apos;s ticket wallet to simulate the gate scanner.
       </p>
 
       {/* Simulator input */}

@@ -40,7 +40,7 @@ export default function RegisterPage() {
 
       window.dispatchEvent(new Event("storage"));
       router.push("/tenant");
-    } catch (err: any) {
+    } catch (err) {
       console.warn("Register failed, running simulation fallback:", err);
       
       // Simulation register fallback

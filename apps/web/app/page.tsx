@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 
 import { Event, FALLBACK_EVENTS } from "./fallbackData";
 import { API_BASE_URL } from "./config";
@@ -227,10 +228,12 @@ export default function Home() {
                       marginBottom: "1.25rem",
                       position: "relative"
                     }}>
-                      <img 
+                      <Image 
                         src={evt.banner || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=800&q=80"} 
                         alt={evt.title} 
-                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                        fill
+                        unoptimized
+                        style={{ objectFit: "cover" }}
                       />
                       <span className="badge badge-info" style={{
                         position: "absolute",

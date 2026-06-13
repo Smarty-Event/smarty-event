@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, Suspense } from "react";
-import { useSearchParams, useParams, useRouter } from "next/navigation";
+import { useSearchParams, useParams } from "next/navigation";
 import Link from "next/link";
 
 import { EventDetail, TicketType, FALLBACK_EVENTS_DETAIL } from "../../../fallbackData";
@@ -23,7 +23,6 @@ const sha256 = async (message: string): Promise<string> => {
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const params = useParams();
-  const router = useRouter();
 
   const eventId = params.id as string;
   const ticketTypeId = searchParams.get("ticketTypeId") || "";
@@ -38,9 +37,21 @@ function CheckoutContent() {
   const [paymentMethod, setPaymentMethod] = useState("USDC");
   const [zkPrivacy, setZkPrivacy] = useState(false);
 
+  interface BookingSuccess {
+    id: string;
+    stellarTxHash: string;
+    ticketType: {
+      name: string;
+      event?: {
+        title: string;
+      };
+    };
+    zkCommitment?: string;
+  }
+
   // Booking states
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [bookingSuccess, setBookingSuccess] = useState<any>(null);
+  const [bookingSuccess, setBookingSuccess] = useState<BookingSuccess | null>(null);
   const [errorMsg, setErrorMsg] = useState("");
 
   // Wallet states
@@ -53,7 +64,12 @@ function CheckoutContent() {
     setIsConnectingWallet(true);
     try {
       if (walletProvider === "albedo") {
-        const albedo = (window as any).albedo;
+        const albedo = (window as Window & {
+          albedo?: {
+            publicKey: () => Promise<{ pubkey: string }>;
+            tx: (params: { xdr: string; network: string }) => Promise<{ signed_envelope_xdr: string }>;
+          };
+        }).albedo;
         if (!albedo) {
           throw new Error("Albedo helper library is not loaded. Please try reloading the page.");
         }
@@ -63,12 +79,21 @@ function CheckoutContent() {
           setWalletType("non-custodial");
         }
       } else {
-        const freighter = (window as any).freighterApi;
+        const freighter = (window as Window & {
+          freighterApi?: {
+            isConnected: () => Promise<{ isConnected: boolean } | boolean>;
+            requestAccess: () => Promise<string | { address?: string; publicKey?: string } | null | undefined>;
+            getPublicKey: () => Promise<string | { publicKey?: string; address?: string } | null | undefined>;
+            getAddress: () => Promise<string | { address?: string; publicKey?: string } | null | undefined>;
+            signTransaction: (xdr: string, opts: { network: string }) => Promise<string>;
+          };
+        }).freighterApi;
         if (!freighter) {
           throw new Error("Freighter helper library is not loaded.");
         }
         const isInstalled = await freighter.isConnected();
-        if (!isInstalled || !isInstalled.isConnected) {
+        const isConnected = typeof isInstalled === "object" ? isInstalled.isConnected : isInstalled;
+        if (!isInstalled || !isConnected) {
           throw new Error("Freighter browser extension is not installed or detected. Please install Freighter or use Albedo.");
         }
         let publicKey = "";
@@ -76,7 +101,7 @@ function CheckoutContent() {
           try {
             const res = await freighter.requestAccess();
             if (res) {
-              publicKey = typeof res === "object" ? res.address || res.publicKey : res;
+              publicKey = typeof res === "object" ? res.address || res.publicKey || "" : res;
             }
           } catch (e) {
             console.warn("requestAccess failed, trying fallback", e);
@@ -87,12 +112,12 @@ function CheckoutContent() {
           if (typeof freighter.getPublicKey === "function") {
             const res = await freighter.getPublicKey();
             if (res) {
-              publicKey = typeof res === "object" ? res.publicKey || res.address : res;
+              publicKey = typeof res === "object" ? res.publicKey || res.address || "" : res;
             }
           } else if (typeof freighter.getAddress === "function") {
             const res = await freighter.getAddress();
             if (res) {
-              publicKey = typeof res === "object" ? res.address || res.publicKey : res;
+              publicKey = typeof res === "object" ? res.address || res.publicKey || "" : res;
             }
           }
         }
@@ -104,9 +129,10 @@ function CheckoutContent() {
           throw new Error("Unable to retrieve public key from Freighter wallet.");
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to connect wallet", err);
-      alert(err.message || "Failed to connect wallet.");
+      const errMsg = err instanceof Error ? err.message : String(err);
+      alert(errMsg || "Failed to connect wallet.");
     } finally {
       setIsConnectingWallet(false);
     }
@@ -118,7 +144,7 @@ function CheckoutContent() {
       .then((data) => {
         if (data && data.title) {
           setEvent(data);
-          const tkt = data.ticketTypes.find((t: any) => t.id === ticketTypeId);
+          const tkt = data.ticketTypes.find((t: TicketType) => t.id === ticketTypeId);
           setSelectedTicket(tkt || data.ticketTypes[0] || null);
         } else {
           const fallback = FALLBACK_EVENTS_DETAIL[eventId];
@@ -190,7 +216,11 @@ function CheckoutContent() {
         // 2. Sign transaction XDR via selected wallet
         let signedXdr = "";
         if (walletProvider === "albedo") {
-          const albedo = (window as any).albedo;
+          const albedo = (window as Window & {
+            albedo?: {
+              tx: (params: { xdr: string; network: string }) => Promise<{ signed_envelope_xdr: string }>;
+            };
+          }).albedo;
           if (!albedo) {
             throw new Error("Albedo helper library is not loaded.");
           }
@@ -200,7 +230,11 @@ function CheckoutContent() {
           });
           signedXdr = res.signed_envelope_xdr;
         } else {
-          const freighter = (window as any).freighterApi;
+          const freighter = (window as Window & {
+            freighterApi?: {
+              signTransaction: (xdr: string, opts: { network: string }) => Promise<string>;
+            };
+          }).freighterApi;
           if (!freighter) {
             throw new Error("Freighter helper library is not loaded.");
           }
@@ -221,7 +255,16 @@ function CheckoutContent() {
         }
       }
 
-      const payload: any = {
+      interface CheckoutPayload {
+        ticketTypeId: string;
+        attendeeName: string;
+        attendeeEmail: string;
+        paymentMethod: string;
+        stellarPublicKey?: string;
+        zkCommitment?: string;
+      }
+
+      const payload: CheckoutPayload = {
         ticketTypeId: selectedTicket.id,
         attendeeName: name,
         attendeeEmail: email,
@@ -255,11 +298,12 @@ function CheckoutContent() {
       }
 
       setBookingSuccess(resData);
-    } catch (err: any) {
+    } catch (err) {
       console.warn("API Error, running simulation fallback:", err);
+      const errMsgStr = err instanceof Error ? err.message : String(err);
       // If we are in non-custodial wallet mode, fallback to simulation is not possible, we fail
       if (isNonCustodial) {
-        setErrorMsg(err.message || "On-chain wallet ticket minting failed.");
+        setErrorMsg(errMsgStr || "On-chain wallet ticket minting failed.");
         setIsSubmitting(false);
         return;
       }

@@ -1,15 +1,15 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useParams, useRouter } from "next/navigation";
+import { useParams } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 import { EventDetail, FALLBACK_EVENTS_DETAIL } from "../../fallbackData";
 import { API_BASE_URL } from "../../config";
 
 export default function EventPage() {
   const params = useParams();
-  const router = useRouter();
   const id = params.id as string;
   const [event, setEvent] = useState<EventDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +39,7 @@ export default function EventPage() {
     return (
       <div className="container" style={{ padding: "5rem", textAlign: "center" }}>
         <h2>Event Not Found</h2>
-        <p style={{ margin: "1rem 0", color: "var(--text-muted)" }}>We couldn't locate the event with ID "{id}".</p>
+        <p style={{ margin: "1rem 0", color: "var(--text-muted)" }}>We couldn&apos;t locate the event with ID &quot;{id}&quot;.</p>
         <Link href="/" className="btn btn-primary">Back to Discover</Link>
       </div>
     );
@@ -66,10 +66,12 @@ export default function EventPage() {
         marginBottom: "3rem",
         border: "1px solid var(--border)"
       }}>
-        <img 
+        <Image 
           src={event.banner || "https://images.unsplash.com/photo-1501281668745-f7f57925c3b4?auto=format&fit=crop&w=1200&q=80"} 
           alt={event.title} 
-          style={{ width: "100%", height: "100%", objectFit: "cover" }}
+          fill
+          unoptimized
+          style={{ objectFit: "cover" }}
         />
         <div style={{
           position: "absolute",
@@ -141,10 +143,13 @@ export default function EventPage() {
               }}>
                 {event.speakers.map((spk) => (
                   <div key={spk.id} className="card" style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                    <img 
+                    <Image 
                       src={spk.avatar || "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80"} 
                       alt={spk.name}
-                      style={{ width: "80px", height: "80px", borderRadius: "50%", objectFit: "cover", marginBottom: "1rem", border: "2px solid var(--border)" }}
+                      width={80}
+                      height={80}
+                      unoptimized
+                      style={{ borderRadius: "50%", objectFit: "cover", marginBottom: "1rem", border: "2px solid var(--border)" }}
                     />
                     <h4 style={{ fontWeight: "600", fontSize: "1.1rem", marginBottom: "0.5rem" }}>{spk.name}</h4>
                     {spk.bio && <p style={{ color: "var(--text-muted)", fontSize: "0.85rem", lineHeight: "1.4" }}>{spk.bio}</p>}
@@ -166,7 +171,7 @@ export default function EventPage() {
                   let parsedBenefits: string[] = [];
                   try {
                     parsedBenefits = typeof tkt.benefits === "string" ? JSON.parse(tkt.benefits) : (tkt.benefits || []);
-                  } catch (e) {
+                  } catch {
                     parsedBenefits = [];
                   }
 

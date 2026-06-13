@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { createPortal } from "react-dom";
+import Image from "next/image";
 import { API_BASE_URL } from "../config";
 
 interface Tenant {
@@ -49,12 +50,31 @@ interface Event {
   sessions: Session[];
 }
 
+interface Metrics {
+  name: string;
+  slug: string;
+  eventsCount: number;
+  totalCapacity: number;
+  totalSold: number;
+  checkedInCount: number;
+  stellarPublicKey: string;
+  stellarIssuerPublicKey: string;
+}
+
+interface UserProfile {
+  id: string;
+  email: string;
+  role: string;
+  tenantId: string;
+  tenantName: string;
+}
+
 export default function OrganizerPortal() {
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [activeTenant, setActiveTenant] = useState<Tenant | null>(null);
-  const [metrics, setMetrics] = useState<any>(null);
+  const [metrics, setMetrics] = useState<Metrics | null>(null);
   const [events, setEvents] = useState<Event[]>([]);
-  const [userProfile, setUserProfile] = useState<any>(null);
+  const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   // Modals Visibility
   const [showTenantModal, setShowTenantModal] = useState(false);
@@ -108,43 +128,19 @@ export default function OrganizerPortal() {
   const [sessionEnd, setSessionEnd] = useState("2026-09-12T11:00");
 
   const [loading, setLoading] = useState(false);
-   const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
-  const [errorMsg, setErrorMsg] = useState("");
   const [mounted, setMounted] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-    loadTenants();
-    const storedUser = localStorage.getItem("smarty_user");
-    if (storedUser) {
-      try {
-        setUserProfile(JSON.parse(storedUser));
-      } catch {
-        setUserProfile(null);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    if (activeTenant) {
-      loadTenantData(activeTenant.id);
+  const loadMockTenants = useCallback(() => {
+    const mock = JSON.parse(localStorage.getItem("mock_tenants") || "[]");
+    setTenants(mock);
+    if (mock.length > 0 && !activeTenant) {
+      setActiveTenant(mock[0]);
     }
   }, [activeTenant]);
 
-  useEffect(() => {
-    const isAnyModalOpen = showTenantModal || showEventModal || showEditEventModal || showTicketModal || showSpeakerModal || showSessionModal || showDeleteConfirmModal;
-    if (isAnyModalOpen) {
-      document.body.style.overflow = "hidden";
-    } else {
-      document.body.style.overflow = "";
-    }
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [showTenantModal, showEventModal, showEditEventModal, showTicketModal, showSpeakerModal, showSessionModal, showDeleteConfirmModal]);
-
-  const loadTenants = () => {
+  const loadTenants = useCallback(() => {
     fetch(`${API_BASE_URL}/api/tenants`)
       .then((res) => res.json())
       .then((data) => {
@@ -160,17 +156,36 @@ export default function OrganizerPortal() {
       .catch(() => {
         loadMockTenants();
       });
-  };
+  }, [activeTenant, loadMockTenants]);
 
-  const loadMockTenants = () => {
-    const mock = JSON.parse(localStorage.getItem("mock_tenants") || "[]");
-    setTenants(mock);
-    if (mock.length > 0 && !activeTenant) {
-      setActiveTenant(mock[0]);
-    }
-  };
+  const setMockMetrics = useCallback((tenantId: string) => {
+    const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]") as (Event & { tenantId: string })[];
+    const tenantEvts = localEvents.filter((e) => e.tenantId === tenantId);
+    
+    const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]") as { status: string; ticketType: { event: { id: string } } }[];
+    const tenantTkts = localTickets.filter((t) => t.ticketType.event.id && tenantEvts.some((e) => e.id === t.ticketType.event.id));
 
-  const loadTenantData = (tenantId: string) => {
+    const checkIns = tenantTkts.filter((t) => t.status === "CHECKED_IN").length;
+
+    setMetrics({
+      name: activeTenant?.name || "Mock Tenant",
+      slug: activeTenant?.slug || "mock",
+      eventsCount: tenantEvts.length,
+      totalCapacity: tenantEvts.reduce((acc: number, e) => acc + e.capacity, 0),
+      totalSold: tenantTkts.length,
+      checkedInCount: checkIns,
+      stellarPublicKey: activeTenant?.stellarPublicKey || "GDX7...MOCK_DISTRIBUTOR_KEY",
+      stellarIssuerPublicKey: "GAY2...MOCK_ISSUER_KEY",
+    });
+  }, [activeTenant]);
+
+  const setMockEvents = useCallback((tenantId: string) => {
+    const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]") as (Event & { tenantId: string })[];
+    const filtered = localEvents.filter((e) => e.tenantId === tenantId);
+    setEvents(filtered);
+  }, []);
+
+  const loadTenantData = useCallback((tenantId: string) => {
     setLoading(true);
     // Fetch metrics
     fetch(`${API_BASE_URL}/api/tenants/${tenantId}/metrics`)
@@ -200,34 +215,38 @@ export default function OrganizerPortal() {
         setMockEvents(tenantId);
       })
       .finally(() => setLoading(false));
-  };
+  }, [setMockMetrics, setMockEvents]);
 
-  const setMockMetrics = (tenantId: string) => {
-    const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
-    const tenantEvts = localEvents.filter((e: any) => e.tenantId === tenantId);
-    
-    const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]");
-    const tenantTkts = localTickets.filter((t: any) => t.ticketType.event.id && tenantEvts.some((e: any) => e.id === t.ticketType.event.id));
+  useEffect(() => {
+    setMounted(true);
+    loadTenants();
+    const storedUser = localStorage.getItem("smarty_user");
+    if (storedUser) {
+      try {
+        setUserProfile(JSON.parse(storedUser));
+      } catch {
+        setUserProfile(null);
+      }
+    }
+  }, [loadTenants]);
 
-    const checkIns = tenantTkts.filter((t: any) => t.status === "CHECKED_IN").length;
+  useEffect(() => {
+    if (activeTenant) {
+      loadTenantData(activeTenant.id);
+    }
+  }, [activeTenant, loadTenantData]);
 
-    setMetrics({
-      name: activeTenant?.name || "Mock Tenant",
-      slug: activeTenant?.slug || "mock",
-      eventsCount: tenantEvts.length,
-      totalCapacity: tenantEvts.reduce((acc: number, e: any) => acc + e.capacity, 0),
-      totalSold: tenantTkts.length,
-      checkedInCount: checkIns,
-      stellarPublicKey: activeTenant?.stellarPublicKey || "GDX7...MOCK_DISTRIBUTOR_KEY",
-      stellarIssuerPublicKey: "GAY2...MOCK_ISSUER_KEY",
-    });
-  };
-
-  const setMockEvents = (tenantId: string) => {
-    const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
-    const filtered = localEvents.filter((e: any) => e.tenantId === tenantId);
-    setEvents(filtered);
-  };
+  useEffect(() => {
+    const isAnyModalOpen = showTenantModal || showEventModal || showEditEventModal || showTicketModal || showSpeakerModal || showSessionModal || showDeleteConfirmModal;
+    if (isAnyModalOpen) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showTenantModal, showEventModal, showEditEventModal, showTicketModal, showSpeakerModal, showSessionModal, showDeleteConfirmModal]);
 
   const handleCreateTenant = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -250,7 +269,7 @@ export default function OrganizerPortal() {
       setNewTenantSlug("");
       setShowTenantModal(false);
       setMessage("Tenant space created successfully! Stellar derived wallets setup.");
-    } catch (err) {
+    } catch {
       console.warn("API offline, simulating Tenant creation locally.");
       const mockNew: Tenant = {
         id: `mock-tenant-${Math.random().toString(36).substr(2, 9)}`,
@@ -303,7 +322,7 @@ export default function OrganizerPortal() {
       setEventCategory("Technology");
       setShowEventModal(false);
       setMessage("Event published successfully!");
-    } catch (err) {
+    } catch {
       console.warn("API offline, simulating Event creation locally.");
       const mockNewEvent: Event = {
         id: `mock-event-${Math.random().toString(36).substr(2, 9)}`,
@@ -318,7 +337,7 @@ export default function OrganizerPortal() {
         speakers: [],
         sessions: [],
       };
-      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
+      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]") as (Event & { tenantId: string })[];
       localEvents.push({ ...mockNewEvent, tenantId: activeTenant.id });
       localStorage.setItem("mock_events", JSON.stringify(localEvents));
       
@@ -384,13 +403,13 @@ export default function OrganizerPortal() {
       setShowEditEventModal(false);
       setEditingEventId(null);
       setMessage("Event updated successfully!");
-    } catch (err) {
+    } catch {
       console.warn("API offline, simulating Event edit locally.");
-      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
-      const idx = localEvents.findIndex((e: any) => e.id === editingEventId);
+      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]") as (Event & { tenantId: string })[];
+      const idx = localEvents.findIndex((e) => e.id === editingEventId);
       if (idx !== -1) {
         localEvents[idx] = {
-          ...localEvents[idx],
+          ...localEvents[idx]!,
           title: editEventTitle,
           description: editEventDesc,
           startDate: editEventStart,
@@ -434,10 +453,10 @@ export default function OrganizerPortal() {
 
       loadTenantData(activeTenant!.id);
       setMessage("Event deleted successfully!");
-    } catch (err) {
+    } catch {
       console.warn("API offline, simulating Event deletion locally.");
-      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
-      const filtered = localEvents.filter((e: any) => e.id !== eventId);
+      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]") as (Event & { tenantId: string })[];
+      const filtered = localEvents.filter((e) => e.id !== eventId);
       localStorage.setItem("mock_events", JSON.stringify(filtered));
 
       loadTenantData(activeTenant!.id);
@@ -473,7 +492,7 @@ export default function OrganizerPortal() {
 
       setEditEventBanner(data.url);
       setMessage("Image uploaded successfully!");
-    } catch (err: any) {
+    } catch (err) {
       console.warn("Upload failed, simulating local asset path:", err);
       setEditEventBanner("https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80");
       setMessage("Simulation upload completed locally!");
@@ -509,7 +528,7 @@ export default function OrganizerPortal() {
 
       setEventBanner(data.url);
       setMessage("Image uploaded successfully!");
-    } catch (err: any) {
+    } catch (err) {
       console.warn("Upload failed, simulating local asset path:", err);
       setEventBanner("https://images.unsplash.com/photo-1540575467063-178a50c2df87?auto=format&fit=crop&w=1200&q=80");
       setMessage("Simulation upload completed locally!");
@@ -543,7 +562,7 @@ export default function OrganizerPortal() {
 
       setSpeakerAvatar(data.url);
       setMessage("Image uploaded successfully!");
-    } catch (err: any) {
+    } catch (err) {
       console.warn("Upload failed, simulating local asset path:", err);
       setSpeakerAvatar("https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=150&q=80");
       setMessage("Simulation upload completed locally!");
@@ -578,12 +597,12 @@ export default function OrganizerPortal() {
       loadTenantData(activeTenant!.id);
       setShowTicketModal(false);
       setMessage("Stellar ticket asset created and limits locked on Testnet!");
-    } catch (err) {
+    } catch {
       console.warn("API offline, simulating Stellar trustlines & asset setup locally.");
       
       // Simulate adding ticket type to mock event in localStorage
-      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
-      const eventIdx = localEvents.findIndex((e: any) => e.id === selectedEventId);
+      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]") as (Event & { tenantId: string })[];
+      const eventIdx = localEvents.findIndex((e) => e.id === selectedEventId);
       if (eventIdx !== -1) {
         const mockTicket: TicketType = {
           id: `mock-tkt-${Math.random().toString(36).substr(2, 9)}`,
@@ -594,8 +613,8 @@ export default function OrganizerPortal() {
           sold: 0,
           benefits: JSON.stringify(["General Admission Access"]),
         };
-        if (!localEvents[eventIdx].ticketTypes) localEvents[eventIdx].ticketTypes = [];
-        localEvents[eventIdx].ticketTypes.push(mockTicket);
+        if (!localEvents[eventIdx]!.ticketTypes) localEvents[eventIdx]!.ticketTypes = [];
+        localEvents[eventIdx]!.ticketTypes.push(mockTicket);
         localStorage.setItem("mock_events", JSON.stringify(localEvents));
       }
 
@@ -631,11 +650,11 @@ export default function OrganizerPortal() {
       setMessage("Speaker profile added!");
     } catch {
       // Offline fallback
-      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
-      const idx = localEvents.findIndex((e: any) => e.id === selectedEventId);
+      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]") as (Event & { tenantId: string })[];
+      const idx = localEvents.findIndex((e) => e.id === selectedEventId);
       if (idx !== -1) {
-        if (!localEvents[idx].speakers) localEvents[idx].speakers = [];
-        localEvents[idx].speakers.push({
+        if (!localEvents[idx]!.speakers) localEvents[idx]!.speakers = [];
+        localEvents[idx]!.speakers.push({
           id: `mock-spk-${Math.random().toString(36).substr(2, 9)}`,
           name: speakerName,
           bio: speakerBio,
@@ -681,11 +700,11 @@ export default function OrganizerPortal() {
       setMessage("Itinerary session scheduled!");
     } catch {
       // Offline fallback
-      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]");
-      const idx = localEvents.findIndex((e: any) => e.id === selectedEventId);
+      const localEvents = JSON.parse(localStorage.getItem("mock_events") || "[]") as (Event & { tenantId: string })[];
+      const idx = localEvents.findIndex((e) => e.id === selectedEventId);
       if (idx !== -1) {
-        if (!localEvents[idx].sessions) localEvents[idx].sessions = [];
-        localEvents[idx].sessions.push({
+        if (!localEvents[idx]!.sessions) localEvents[idx]!.sessions = [];
+        localEvents[idx]!.sessions.push({
           id: `mock-sess-${Math.random().toString(36).substr(2, 9)}`,
           title: sessionTitle,
           startTime: sessionStart,
@@ -853,7 +872,7 @@ export default function OrganizerPortal() {
 
               {events.length === 0 ? (
                 <div style={{ color: "var(--text-muted)", textAlign: "center", padding: "3rem 0" }}>
-                  No active event listings found. Click "Publish New Event" to get started!
+                  No active event listings found. Click &quot;Publish New Event&quot; to get started!
                 </div>
               ) : (
                 <div style={{ display: "flex", flexDirection: "column", gap: "2.5rem" }}>
@@ -1159,10 +1178,12 @@ export default function OrganizerPortal() {
                     position: "relative",
                     height: "140px"
                   }}>
-                    <img 
+                    <Image 
                       src={eventBanner} 
                       alt="Banner Preview" 
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                      fill
+                      unoptimized
+                      style={{ objectFit: "cover" }} 
                     />
                     <button 
                       type="button" 
@@ -1332,10 +1353,12 @@ export default function OrganizerPortal() {
                     position: "relative",
                     height: "140px"
                   }}>
-                    <img 
+                    <Image 
                       src={editEventBanner} 
                       alt="Banner Preview" 
-                      style={{ width: "100%", height: "100%", objectFit: "cover" }} 
+                      fill
+                      unoptimized
+                      style={{ objectFit: "cover" }} 
                     />
                     <button 
                       type="button" 
@@ -1463,9 +1486,11 @@ export default function OrganizerPortal() {
                     position: "relative",
                     height: "100px"
                   }}>
-                    <img 
+                    <Image 
                       src={speakerAvatar} 
                       alt="Speaker Avatar Preview" 
+                      fill
+                      unoptimized
                       style={{ width: "100%", height: "100%", objectFit: "cover" }} 
                     />
                     <button 

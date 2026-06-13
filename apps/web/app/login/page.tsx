@@ -39,7 +39,7 @@ export default function LoginPage() {
       window.dispatchEvent(new Event("storage"));
 
       router.push("/tenant");
-    } catch (err: any) {
+    } catch (err) {
       console.warn("Login failed, running simulation fallback:", err);
       
       // Simulation login logic if API is offline

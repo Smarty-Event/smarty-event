@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Image from "next/image";
 import { API_BASE_URL } from "../../config";
 
 interface Ticket {
@@ -41,7 +42,7 @@ export default function AttendeeWallet() {
     setIsConnectingWallet(true);
     try {
       if (walletProvider === "albedo") {
-        const albedo = (window as any).albedo;
+        const albedo = (window as Window & { albedo?: { publicKey: () => Promise<{ pubkey: string }> } }).albedo;
         if (!albedo) {
           throw new Error("Albedo helper library is not loaded. Please try reloading the page.");
         }
@@ -51,12 +52,20 @@ export default function AttendeeWallet() {
           fetchTicketsByWallet(res.pubkey);
         }
       } else {
-        const freighter = (window as any).freighterApi;
+        const freighter = (window as Window & {
+          freighterApi?: {
+            isConnected: () => Promise<{ isConnected: boolean } | boolean>;
+            requestAccess: () => Promise<string | { address?: string; publicKey?: string } | null | undefined>;
+            getPublicKey: () => Promise<string | { publicKey?: string; address?: string } | null | undefined>;
+            getAddress: () => Promise<string | { address?: string; publicKey?: string } | null | undefined>;
+          };
+        }).freighterApi;
         if (!freighter) {
           throw new Error("Freighter helper library is not loaded.");
         }
         const isInstalled = await freighter.isConnected();
-        if (!isInstalled || !isInstalled.isConnected) {
+        const isConnected = typeof isInstalled === "object" ? isInstalled.isConnected : isInstalled;
+        if (!isInstalled || !isConnected) {
           throw new Error("Freighter browser extension is not installed or detected. Please install Freighter or use Albedo.");
         }
         let publicKey = "";
@@ -64,7 +73,7 @@ export default function AttendeeWallet() {
           try {
             const res = await freighter.requestAccess();
             if (res) {
-              publicKey = typeof res === "object" ? res.address || res.publicKey : res;
+              publicKey = typeof res === "object" ? res.address || res.publicKey || "" : res;
             }
           } catch (e) {
             console.warn("requestAccess failed, trying fallback", e);
@@ -75,12 +84,12 @@ export default function AttendeeWallet() {
           if (typeof freighter.getPublicKey === "function") {
             const res = await freighter.getPublicKey();
             if (res) {
-              publicKey = typeof res === "object" ? res.publicKey || res.address : res;
+              publicKey = typeof res === "object" ? res.publicKey || res.address || "" : res;
             }
           } else if (typeof freighter.getAddress === "function") {
             const res = await freighter.getAddress();
             if (res) {
-              publicKey = typeof res === "object" ? res.address || res.publicKey : res;
+              publicKey = typeof res === "object" ? res.address || res.publicKey || "" : res;
             }
           }
         }
@@ -92,9 +101,10 @@ export default function AttendeeWallet() {
           throw new Error("Unable to retrieve public key from Freighter wallet.");
         }
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error("Failed to connect wallet", err);
-      alert(err.message || "Failed to connect wallet.");
+      const errMsg = err instanceof Error ? err.message : String(err);
+      alert(errMsg || "Failed to connect wallet.");
     } finally {
       setIsConnectingWallet(false);
     }
@@ -172,13 +182,13 @@ export default function AttendeeWallet() {
       .then((data) => {
         if (Array.isArray(data)) {
           // Merge with any matching mock tickets from localStorage
-          const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]");
+          const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]") as Ticket[];
           const filteredLocal = localTickets.filter(
-            (t: any) => t.attendee.email.toLowerCase() === email.toLowerCase()
+            (t) => t.attendee.email.toLowerCase() === email.toLowerCase()
           );
 
           // Build local tokens
-          const localWithTokens = filteredLocal.map((t: any) => ({
+          const localWithTokens = filteredLocal.map((t) => ({
             ...t,
             qrToken: `${t.id}:mock-user:${Date.now()}:mock-signature-hash`,
           }));
@@ -195,12 +205,12 @@ export default function AttendeeWallet() {
   };
 
   const loadMockTicketsOnly = () => {
-    const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]");
+    const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]") as Ticket[];
     const filteredLocal = localTickets.filter(
-      (t: any) => t.attendee.email.toLowerCase() === email.toLowerCase()
+      (t) => t.attendee.email.toLowerCase() === email.toLowerCase()
     );
 
-    const localWithTokens = filteredLocal.map((t: any) => ({
+    const localWithTokens = filteredLocal.map((t) => ({
       ...t,
       qrToken: `${t.id}:mock-user:${Date.now()}:mock-signature-hash`,
     }));
@@ -377,7 +387,7 @@ export default function AttendeeWallet() {
         <div style={{ textAlign: "center", padding: "4rem", color: "var(--text-muted)" }} className="glass">
           <h3>No tickets found</h3>
           <p style={{ marginTop: "0.5rem" }}>
-            We couldn't find any ticket assets associated with <strong>{email}</strong>.
+            We couldn&apos;t find any ticket assets associated with <strong>{email}</strong>.
           </p>
         </div>
       ) : (
@@ -515,7 +525,7 @@ export default function AttendeeWallet() {
                         display: "inline-block",
                         boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
                       }}>
-                        <img src={qrCodeUrl} alt="Ticket QR code token" style={{ display: "block" }} />
+                        <Image src={qrCodeUrl} alt="Ticket QR code token" width={150} height={150} unoptimized style={{ display: "block" }} />
                       </div>
                       <span style={{ display: "block", fontSize: "0.75rem", color: isZkProtected ? "#10b981" : "var(--text-muted)", marginTop: "0.75rem" }}>
                         {isZkProtected ? (
