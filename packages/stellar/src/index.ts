@@ -5,7 +5,14 @@ import {
   Networks,
   Horizon,
   Operation,
+  rpc,
+  Contract,
+  xdr,
+  scValToNative,
+  Transaction
 } from "stellar-sdk";
+
+export const rpcServer = new rpc.Server("https://soroban-testnet.stellar.org");
 
 export const HORIZON_URL = "https://horizon-testnet.stellar.org";
 export const server = new Horizon.Server(HORIZON_URL);
@@ -249,4 +256,105 @@ export async function prepareTrustlineTx(params: {
     .build();
 
   return tx.toXDR();
+}
+
+export async function isNullifierSpentOnChain(params: {
+  contractId: string;
+  nullifierHash: string;
+  callerPublicKey: string;
+}): Promise<boolean> {
+  await ensureAccountActive(params.callerPublicKey);
+  const callerAccount = await server.loadAccount(params.callerPublicKey);
+
+  const contract = new Contract(params.contractId);
+  const op = contract.call(
+    "is_spent",
+    xdr.ScVal.scvBytes(Buffer.from(params.nullifierHash, "hex"))
+  );
+
+  const tx = new TransactionBuilder(callerAccount, {
+    fee: "100",
+    networkPassphrase: Networks.TESTNET,
+  })
+    .addOperation(op)
+    .setTimeout(180)
+    .build();
+
+  const sim = await rpcServer.simulateTransaction(tx);
+  if (!rpc.Api.isSimulationSuccess(sim)) {
+    throw new Error(`Simulation failed: ${JSON.stringify(sim)}`);
+  }
+
+  if (!sim.result) {
+    throw new Error("Simulation result is missing");
+  }
+
+  return scValToNative(sim.result.retval) as boolean;
+}
+
+export async function verifyZkTicketOnChain(params: {
+  contractId: string;
+  proof: string;
+  commitment: string;
+  nullifierHash: string;
+  distributorSecret: string;
+}): Promise<{ success: boolean; txHash?: string; error?: string }> {
+  const deployerKey = Keypair.fromSecret(params.distributorSecret);
+  const deployerPublic = deployerKey.publicKey();
+
+  await ensureAccountActive(deployerPublic);
+  const deployerAccount = await server.loadAccount(deployerPublic);
+
+  const contract = new Contract(params.contractId);
+  const op = contract.call(
+    "verify_and_claim",
+    xdr.ScVal.scvBytes(Buffer.from(params.proof, "hex")),
+    xdr.ScVal.scvBytes(Buffer.from(params.commitment, "hex")),
+    xdr.ScVal.scvBytes(Buffer.from(params.nullifierHash, "hex"))
+  );
+
+  const tx = new TransactionBuilder(deployerAccount, {
+    fee: "100000",
+    networkPassphrase: Networks.TESTNET,
+  })
+    .addOperation(op)
+    .setTimeout(180)
+    .build();
+
+  // 1. Simulate first to see if it is valid (which returns the boolean value of verify_and_claim)
+  const sim = await rpcServer.simulateTransaction(tx);
+  if (!rpc.Api.isSimulationSuccess(sim)) {
+    return { success: false, error: `Simulation failed: ${sim.error}` };
+  }
+
+  if (!sim.result) {
+    return { success: false, error: "Simulation succeeded but result is missing" };
+  }
+
+  const isVal = scValToNative(sim.result.retval) as boolean;
+  if (!isVal) {
+    return { success: false, error: "Invalid proof or ticket nullifier already spent on-chain" };
+  }
+
+  // 2. Assemble, sign and submit
+  const resultTx = rpc.assembleTransaction(tx, sim).build() as Transaction;
+  resultTx.sign(deployerKey);
+
+  const sendResponse = await rpcServer.sendTransaction(resultTx);
+  if (sendResponse.status === "ERROR") {
+    return { success: false, error: `Transaction send failed: ${JSON.stringify(sendResponse)}` };
+  }
+
+  // 3. Poll for inclusion
+  for (let i = 0; i < 30; i++) {
+    const rawTxStatus = await rpcServer._getTransaction(sendResponse.hash);
+    if (rawTxStatus.status === "SUCCESS") {
+      return { success: true, txHash: sendResponse.hash };
+    } else if (rawTxStatus.status === "FAILED") {
+      return { success: false, error: "Transaction execution failed on-chain" };
+    }
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+  }
+
+  return { success: false, error: "Transaction polling timed out" };
 }
