@@ -358,3 +358,6 @@ export async function verifyZkTicketOnChain(params: {
 
   return { success: false, error: "Transaction polling timed out" };
 }
+
+export * from "./zk";
+

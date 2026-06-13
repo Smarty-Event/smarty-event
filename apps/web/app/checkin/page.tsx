@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { API_BASE_URL } from "../config";
+import { verifyZkProof } from "../../../../packages/stellar/src/zk";
 
 interface Ticket {
   id: string;
@@ -75,40 +76,54 @@ export default function GateScanner() {
             return;
           }
 
-          const [, , commitment, nullifierHash] = parts;
+          const proof = parts[1]!;
+          const commitment = parts[2]!;
+          const nullifierHash = parts[3]!;
 
-          // Look up ticket in localStorage mock tickets
-          const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]") as Ticket[];
-          const tktIndex = localTickets.findIndex((t) => t.zkCommitment === commitment);
+          verifyZkProof(commitment, nullifierHash, proof).then((isProofValid) => {
+            if (!isProofValid) {
+              setErrorMsg("Check-in rejected: Zero-Knowledge cryptographic proof is invalid.");
+              setLoading(false);
+              return;
+            }
 
-          if (tktIndex === -1) {
-            setErrorMsg("Check-in rejected: No active ticket found matching this ZK commitment.");
+            // Look up ticket in localStorage mock tickets
+            const localTickets = JSON.parse(localStorage.getItem("mock_tickets") || "[]") as Ticket[];
+            const tktIndex = localTickets.findIndex((t) => t.zkCommitment === commitment);
+
+            if (tktIndex === -1) {
+              setErrorMsg("Check-in rejected: No active ticket found matching this ZK commitment.");
+              setLoading(false);
+              return;
+            }
+
+            const ticket = localTickets[tktIndex]!;
+
+            if (ticket.status === "CHECKED_IN") {
+              setErrorMsg("Double-Spend Detected! This ZK ticket was already checked in.");
+              setLoading(false);
+              return;
+            }
+
+            // Mark ticket checked-in
+            ticket.status = "CHECKED_IN";
+            ticket.zkNullifierHash = nullifierHash;
+            localTickets[tktIndex] = ticket;
+            localStorage.setItem("mock_tickets", JSON.stringify(localTickets));
+
+            setResult({
+              message: "ZK Check-in successful! (Simulation Mode)",
+              attendeeName: "Anonymous (ZK Verified)",
+              ticketType: ticket.ticketType.name,
+              eventTitle: ticket.ticketType.event.title,
+              scannedAt: new Date().toISOString(),
+            });
             setLoading(false);
-            return;
-          }
-
-          const ticket = localTickets[tktIndex]!;
-
-          if (ticket.status === "CHECKED_IN") {
-            setErrorMsg("Double-Spend Detected! This ZK ticket was already checked in.");
+          }).catch((err) => {
+            console.error("ZK verification error", err);
+            setErrorMsg("Check-in rejected: Error verifying ZK cryptographic proof.");
             setLoading(false);
-            return;
-          }
-
-          // Mark ticket checked-in
-          ticket.status = "CHECKED_IN";
-          ticket.zkNullifierHash = nullifierHash;
-          localTickets[tktIndex] = ticket;
-          localStorage.setItem("mock_tickets", JSON.stringify(localTickets));
-
-          setResult({
-            message: "ZK Check-in successful! (Simulation Mode)",
-            attendeeName: "Anonymous (ZK Verified)",
-            ticketType: ticket.ticketType.name,
-            eventTitle: ticket.ticketType.event.title,
-            scannedAt: new Date().toISOString(),
           });
-          setLoading(false);
           return;
         }
 

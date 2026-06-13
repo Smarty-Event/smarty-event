@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
-import { verifyTicketOwnership, verifyZkTicketOnChain } from "@repo/stellar";
+import { verifyTicketOwnership, verifyZkTicketOnChain, verifyZkProof } from "@repo/stellar";
 import * as crypto from "crypto";
 
 @Injectable()
@@ -28,6 +28,12 @@ export class CheckInService {
       const [, proof, commitment, nullifierHash] = parts;
       if (!proof || !commitment || !nullifierHash) {
         throw new BadRequestException("Invalid ZK QR token format");
+      }
+
+      // 0. Verify ZK Proof mathematically
+      const isZkValid = await verifyZkProof(commitment, nullifierHash, proof);
+      if (!isZkValid) {
+        throw new BadRequestException("Invalid cryptographic zero-knowledge proof");
       }
 
       // 1. Fetch ticket by commitment

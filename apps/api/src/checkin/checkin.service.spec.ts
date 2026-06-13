@@ -9,9 +9,10 @@ import * as crypto from "crypto";
 jest.mock("@repo/stellar", () => ({
   verifyTicketOwnership: jest.fn(),
   verifyZkTicketOnChain: jest.fn(),
+  verifyZkProof: jest.fn(),
 }));
 
-import { verifyTicketOwnership, verifyZkTicketOnChain } from "@repo/stellar";
+import { verifyTicketOwnership, verifyZkTicketOnChain, verifyZkProof } from "@repo/stellar";
 
 describe("CheckInService", () => {
   let service: CheckInService;
@@ -133,6 +134,7 @@ describe("CheckInService", () => {
         ticketType: { name: "General Admission", event: { title: "ZK Summit", tenantId: "tenant-99" } },
       };
 
+      (verifyZkProof as jest.Mock).mockResolvedValue(true);
       mockPrismaService.ticket.findFirst.mockResolvedValue(mockTicket);
       (verifyZkTicketOnChain as jest.Mock).mockResolvedValue({ success: true, txHash: "tx_hash_123" });
       mockPrismaService.checkIn.create.mockResolvedValue({ scannedAt: new Date() });
@@ -167,6 +169,7 @@ describe("CheckInService", () => {
         ticketType: { event: { tenantId: "tenant-99" } },
       };
 
+      (verifyZkProof as jest.Mock).mockResolvedValue(true);
       mockPrismaService.ticket.findFirst.mockResolvedValue(mockTicket);
 
       await expect(service.processCheckIn({ qrToken, scannedById: "staff-777" }))
