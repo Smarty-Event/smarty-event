@@ -33,7 +33,10 @@ This file serves as a guide for AI assistants (like Claude, Cursor, Antigravity,
   - Always wrap side-effect functions inside `useCallback` when referencing them in `useEffect` arrays to prevent render loops.
   - Escape unescaped quote literals (`'` -> `&apos;` and `"` -> `&quot;`) inside JSX markup.
 - **Testing Standard**: Every feature change, backend service update, or smart contract logic change must be accompanied by comprehensive tests.
-- **Git Commits**: Follow the conventional commits specification (e.g. `fix(web): ...`, `refactor(web): ...`, `test(api): ...`). Commit complete, building blocks of code.
+- **Git & Branching Workflow (Mandatory)**:
+  - After every fix or task, you must: **test**, **commit**, **push**, and **raise a PR to the `main` branch**.
+  - **Branch Naming**: New features must be developed on a new branch named `new-feature-branch` or prefixed with `feature/`. Bug fixes must be developed on a branch named `new-fix-branch` or prefixed with `fix/`.
+  - Follow the conventional commits specification (e.g. `fix(web): ...`, `refactor(web): ...`, `test(api): ...`). Commit complete, building blocks of code.
 
 ---
 
