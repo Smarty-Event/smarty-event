@@ -28,7 +28,7 @@ export class EventService {
       banner?: string;
       category?: string;
       timezone?: string;
-      venue?: any;
+      venue?: Record<string, unknown>;
     }
   ) {
     await this.tenantService.getTenant(tenantId);
@@ -76,7 +76,7 @@ export class EventService {
 
   async addSpeaker(
     eventId: string,
-    data: { name: string; bio?: string; avatar?: string; social?: any }
+    data: { name: string; bio?: string; avatar?: string; social?: Record<string, unknown> }
   ) {
     await this.getEvent(eventId);
 
@@ -170,7 +170,7 @@ export class EventService {
       banner?: string;
       category?: string;
       timezone?: string;
-      venue?: any;
+      venue?: Record<string, unknown>;
     }
   ) {
     await this.getEvent(id);

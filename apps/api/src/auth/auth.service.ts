@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
+import { BadRequestException, Injectable, UnauthorizedException } from "@nestjs/common";
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
 import * as crypto from "crypto";

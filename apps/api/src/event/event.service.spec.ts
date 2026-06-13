@@ -13,8 +13,6 @@ import { createTicketAsset } from "@repo/stellar";
 
 describe("EventService", () => {
   let service: EventService;
-  let prisma: PrismaService;
-  let tenantService: TenantService;
 
   const mockPrismaService = {
     event: {
@@ -51,8 +49,6 @@ describe("EventService", () => {
     }).compile();
 
     service = module.get<EventService>(EventService);
-    prisma = module.get<PrismaService>(PrismaService);
-    tenantService = module.get<TenantService>(TenantService);
   });
 
   afterEach(() => {

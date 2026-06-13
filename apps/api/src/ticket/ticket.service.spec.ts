@@ -17,9 +17,6 @@ import { mintTicket, transferTicket } from "@repo/stellar";
 
 describe("TicketService", () => {
   let service: TicketService;
-  let prisma: PrismaService;
-  let tenantService: TenantService;
-  let eventService: EventService;
 
   const mockPrismaService = {
     ticketType: {
@@ -62,9 +59,6 @@ describe("TicketService", () => {
     }).compile();
 
     service = module.get<TicketService>(TicketService);
-    prisma = module.get<PrismaService>(PrismaService);
-    tenantService = module.get<TenantService>(TenantService);
-    eventService = module.get<EventService>(EventService);
   });
 
   afterEach(() => {

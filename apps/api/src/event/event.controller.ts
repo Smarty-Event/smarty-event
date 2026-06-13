@@ -1,7 +1,7 @@
 import { Body, Controller, Get, Param, Post, Query, UseInterceptors, UploadedFile, BadRequestException, Patch, Delete } from "@nestjs/common";
 import { EventService } from "./event.service";
 import { FileInterceptor } from "@nestjs/platform-express";
-// @ts-ignore
+// @ts-expect-error diskStorage requires custom types if multer typings are not resolved
 import { diskStorage } from "multer";
 import { extname } from "path";
 import * as fs from "fs";
@@ -21,7 +21,7 @@ export class EventController {
     FileInterceptor("file", {
       storage: diskStorage({
         destination: "./uploads",
-        filename: (req: any, file: any, callback: any) => {
+        filename: (req: unknown, file: { originalname: string }, callback: (error: Error | null, filename: string) => void) => {
           const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
           callback(null, `banner-${uniqueSuffix}${ext}`);
@@ -32,7 +32,7 @@ export class EventController {
       },
     })
   )
-  async uploadImage(@UploadedFile() file: any) {
+  async uploadImage(@UploadedFile() file: { filename: string }) {
     if (!file) {
       throw new BadRequestException("No file uploaded");
     }
@@ -54,7 +54,7 @@ export class EventController {
       banner?: string;
       category?: string;
       timezone?: string;
-      venue?: any;
+      venue?: Record<string, unknown>;
     }
   ) {
     return this.eventService.createEvent(tenantId, body);
@@ -73,7 +73,7 @@ export class EventController {
   @Post(":id/speakers")
   async addSpeaker(
     @Param("id") id: string,
-    @Body() body: { name: string; bio?: string; avatar?: string; social?: any }
+    @Body() body: { name: string; bio?: string; avatar?: string; social?: Record<string, unknown> }
   ) {
     return this.eventService.addSpeaker(id, body);
   }
@@ -125,7 +125,7 @@ export class EventController {
       banner?: string;
       category?: string;
       timezone?: string;
-      venue?: any;
+      venue?: Record<string, unknown>;
     }
   ) {
     return this.eventService.updateEvent(id, body);

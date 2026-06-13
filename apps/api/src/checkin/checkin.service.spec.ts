@@ -2,7 +2,7 @@ import { Test, TestingModule } from "@nestjs/testing";
 import { CheckInService } from "./checkin.service";
 import { PrismaService } from "../prisma.service";
 import { TenantService } from "../tenant/tenant.service";
-import { BadRequestException, NotFoundException } from "@nestjs/common";
+import { BadRequestException } from "@nestjs/common";
 import * as crypto from "crypto";
 
 // Mock the @repo/stellar functions
@@ -15,8 +15,6 @@ import { verifyTicketOwnership, verifyZkTicketOnChain } from "@repo/stellar";
 
 describe("CheckInService", () => {
   let service: CheckInService;
-  let prisma: PrismaService;
-  let tenantService: TenantService;
 
   const mockPrismaService = {
     ticket: {
@@ -46,8 +44,6 @@ describe("CheckInService", () => {
     }).compile();
 
     service = module.get<CheckInService>(CheckInService);
-    prisma = module.get<PrismaService>(PrismaService);
-    tenantService = module.get<TenantService>(TenantService);
   });
 
   afterEach(() => {

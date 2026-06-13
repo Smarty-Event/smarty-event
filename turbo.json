@@ -1,6 +1,14 @@
 {
   "$schema": "https://turborepo.dev/schema.json",
   "ui": "tui",
+  "globalEnv": [
+    "DATABASE_URL",
+    "PORT",
+    "JWT_SECRET",
+    "HMAC_SECRET",
+    "NEXT_PUBLIC_API_URL",
+    "ZK_VERIFIER_CONTRACT_ID"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
