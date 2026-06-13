@@ -40,9 +40,10 @@ export default function RegisterPage() {
 
       window.dispatchEvent(new Event("storage"));
       router.push("/tenant");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Register failed:", err);
-      setErrorMsg(err.message || "An unexpected error occurred during registration.");
+      const message = err instanceof Error ? err.message : "An unexpected error occurred during registration.";
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }

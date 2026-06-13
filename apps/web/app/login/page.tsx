@@ -39,9 +39,10 @@ export default function LoginPage() {
       window.dispatchEvent(new Event("storage"));
 
       router.push("/tenant");
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error("Login failed:", err);
-      setErrorMsg(err.message || "An unexpected error occurred during login.");
+      const message = err instanceof Error ? err.message : "An unexpected error occurred during login.";
+      setErrorMsg(message);
     } finally {
       setLoading(false);
     }
