@@ -38,3 +38,8 @@ impl ZkTicketVerifier {
         true
     }
 }
+
+#[cfg(test)]
+mod test;
+
+

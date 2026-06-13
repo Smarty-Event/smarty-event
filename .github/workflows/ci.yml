@@ -1,0 +1,53 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  typescript-checks:
+    name: TypeScript Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npx prisma generate --schema=packages/database/prisma/schema.prisma
+
+      - name: Lint Code
+        run: npm run lint
+
+      - name: Type Check Workspaces
+        run: npm run check-types
+
+      - name: Run Jest Unit Tests
+        run: npm run test
+
+  rust-checks:
+    name: Rust Smart Contract Build & Test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Rust Toolchain
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+
+      - name: Run Cargo Tests
+        run: cargo test --manifest-path packages/soroban/Cargo.toml
