@@ -6,19 +6,8 @@ import Link from "next/link";
 
 import { EventDetail, TicketType, FALLBACK_EVENTS_DETAIL } from "../../../fallbackData";
 import { API_BASE_URL } from "../../../config";
+import { generateZkKeys } from "../../../../../../packages/stellar/src/zk";
 
-const generateRandomHex = (length: number = 32): string => {
-  const array = new Uint8Array(length);
-  window.crypto.getRandomValues(array);
-  return Array.from(array).map(b => b.toString(16).padStart(2, '0')).join('');
-};
-
-const sha256 = async (message: string): Promise<string> => {
-  const msgBuffer = new TextEncoder().encode(message);
-  const hashBuffer = await window.crypto.subtle.digest("SHA-256", msgBuffer);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, "0")).join("");
-};
 
 function CheckoutContent() {
   const searchParams = useSearchParams();
@@ -196,10 +185,11 @@ function CheckoutContent() {
 
     try {
       if (zkPrivacy) {
-        secret = generateRandomHex(32);
-        nullifier = generateRandomHex(32);
-        commitment = await sha256(secret + nullifier);
-        nullifierHash = await sha256(nullifier);
+        const zkKeys = await generateZkKeys();
+        secret = zkKeys.secret;
+        nullifier = zkKeys.nullifier;
+        commitment = zkKeys.commitment;
+        nullifierHash = zkKeys.nullifierHash;
       }
 
       if (isNonCustodial) {
@@ -312,10 +302,11 @@ function CheckoutContent() {
       setTimeout(async () => {
         let fallbackCommitment = commitment;
         if (zkPrivacy && !fallbackCommitment) {
-          secret = generateRandomHex(32);
-          nullifier = generateRandomHex(32);
-          fallbackCommitment = await sha256(secret + nullifier);
-          nullifierHash = await sha256(nullifier);
+          const zkKeys = await generateZkKeys();
+          secret = zkKeys.secret;
+          nullifier = zkKeys.nullifier;
+          fallbackCommitment = zkKeys.commitment;
+          nullifierHash = zkKeys.nullifierHash;
         }
 
         const mockResult = {

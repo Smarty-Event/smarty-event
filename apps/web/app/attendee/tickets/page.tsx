@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Image from "next/image";
 import { API_BASE_URL } from "../../config";
+import { generateZkProof } from "../../../../../packages/stellar/src/zk";
 
 interface Ticket {
   id: string;
@@ -37,6 +38,29 @@ export default function AttendeeWallet() {
   const [walletProvider, setWalletProvider] = useState<"albedo" | "freighter">("albedo");
   const [connectedPublicKey, setConnectedPublicKey] = useState("");
   const [isConnectingWallet, setIsConnectingWallet] = useState(false);
+  const [zkProofs, setZkProofs] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    tickets.forEach((tkt) => {
+      if (tkt.zkCommitment && !zkProofs[tkt.zkCommitment]) {
+        const localZkData = localStorage.getItem(`zk_ticket_${tkt.zkCommitment}`);
+        if (localZkData) {
+          try {
+            const { secret, nullifier } = JSON.parse(localZkData);
+            generateZkProof(secret, nullifier)
+              .then((proof) => {
+                setZkProofs((prev) => ({ ...prev, [tkt.zkCommitment!]: proof }));
+              })
+              .catch((err) => {
+                console.warn("Failed to generate ZK proof for ticket", tkt.id, err);
+              });
+          } catch (e) {
+            console.warn("Failed to parse ZK data", e);
+          }
+        }
+      }
+    });
+  }, [tickets, zkProofs]);
 
   const connectWallet = async () => {
     setIsConnectingWallet(true);
@@ -396,18 +420,22 @@ export default function AttendeeWallet() {
             let qrToken = tkt.qrToken;
             let isZkProtected = false;
             let zkKeysMissing = false;
+            let isProofGenerating = false;
 
             if (tkt.zkCommitment) {
               const localZkData = localStorage.getItem(`zk_ticket_${tkt.zkCommitment}`);
               if (localZkData) {
                 try {
-                  const { secret, nullifier, commitment, nullifierHash } = JSON.parse(localZkData);
-                  const proofPayload = `simulated_zk_proof_for_secret_${secret}_and_nullifier_${nullifier}`;
-                  const proofHex = Array.from(new TextEncoder().encode(proofPayload))
-                    .map(b => b.toString(16).padStart(2, "0"))
-                    .join("");
-                  qrToken = `zk:${proofHex}:${commitment}:${nullifierHash}`;
-                  isZkProtected = true;
+                  const { commitment, nullifierHash } = JSON.parse(localZkData);
+                  const proof = zkProofs[tkt.zkCommitment];
+                  if (proof) {
+                    qrToken = `zk:${proof}:${commitment}:${nullifierHash}`;
+                    isZkProtected = true;
+                  } else {
+                    isZkProtected = true;
+                    isProofGenerating = true;
+                    qrToken = undefined;
+                  }
                 } catch (e) {
                   console.warn("Failed to parse local ZK data", e);
                 }
@@ -515,6 +543,19 @@ export default function AttendeeWallet() {
                       <span style={{ fontSize: "0.75rem", color: "var(--text-muted)" }}>
                         Purchased from another browser.
                       </span>
+                    </div>
+                  ) : isProofGenerating ? (
+                    <div style={{ textAlign: "center", color: "var(--primary)", fontSize: "0.85rem" }}>
+                      <div style={{
+                        width: "30px",
+                        height: "30px",
+                        border: "3px solid rgba(255,255,255,0.1)",
+                        borderTopColor: "var(--primary)",
+                        borderRadius: "50%",
+                        animation: "spin 1s linear infinite",
+                        margin: "0 auto 0.75rem auto"
+                      }} />
+                      🛡️ Generating ZK Proof...
                     </div>
                   ) : qrCodeUrl ? (
                     <div style={{ textAlign: "center" }}>
