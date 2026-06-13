@@ -564,11 +564,35 @@ export default function AttendeeWallet() {
                         padding: "8px",
                         borderRadius: "12px",
                         display: "inline-block",
-                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)"
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
+                        marginBottom: "0.5rem"
                       }}>
                         <Image src={qrCodeUrl} alt="Ticket QR code token" width={150} height={150} unoptimized style={{ display: "block" }} />
                       </div>
-                      <span style={{ display: "block", fontSize: "0.75rem", color: isZkProtected ? "#10b981" : "var(--text-muted)", marginTop: "0.75rem" }}>
+                      
+                      <div style={{ marginBottom: "0.5rem" }}>
+                        <button
+                          onClick={() => {
+                            if (qrToken) {
+                              navigator.clipboard.writeText(qrToken);
+                              alert("Token copied! You can now paste this into the Gate Scanner simulator (/checkin)");
+                            }
+                          }}
+                          style={{
+                            background: "var(--surface)",
+                            border: "1px solid var(--border)",
+                            color: "var(--text)",
+                            padding: "4px 8px",
+                            borderRadius: "4px",
+                            fontSize: "0.7rem",
+                            cursor: "pointer",
+                          }}
+                        >
+                          📋 Copy Raw Token
+                        </button>
+                      </div>
+
+                      <span style={{ display: "block", fontSize: "0.75rem", color: isZkProtected ? "#10b981" : "var(--text-muted)", marginTop: "0.25rem" }}>
                         {isZkProtected ? (
                           <>
                             🛡️ ZK Private Token <br/>
